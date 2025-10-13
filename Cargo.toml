@@ -4,3 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+axum = { version = "0.8.6", features = ["macros", "ws", "multipart", "http2"] }
+serde = { version = "1.0.228", features = ["derive"] }
+tokio = { version = "1.47.1", features = ["full"] }
+uuid = "1.18.1"
