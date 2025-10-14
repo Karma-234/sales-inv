@@ -1,10 +1,15 @@
-use axum::Router;
+use axum::{Router, routing::get};
+mod mproduct;
+mod shared_var;
 
 #[tokio::main]
 async fn main() {
     println!("Hello, world!");
 
-    let app = Router::new();
+    let app = Router::new().route(
+        &mproduct::routes::get_products(),
+        get(mproduct::api::get_product_handler),
+    );
 
     // Define IP and listener
     let address = "0.0.0.0:7777";
