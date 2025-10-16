@@ -40,3 +40,19 @@ where
         (status, Json(self)).into_response()
     }
 }
+
+pub enum UserRole {
+    Admin,
+    User,
+    Guest,
+}
+
+impl UserRole {
+    pub fn as_str(&self) -> &str {
+        match self {
+            UserRole::Admin => "ADMIN",
+            UserRole::User => "USER",
+            UserRole::Guest => "GUEST",
+        }
+    }
+}

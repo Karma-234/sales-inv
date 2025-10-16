@@ -1,4 +1,4 @@
-#[derive(serde::Serialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ProductModel {
     pub id: String,
     pub name: String,

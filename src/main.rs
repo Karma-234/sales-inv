@@ -12,9 +12,10 @@ async fn main() {
     );
 
     // Define IP and listener
-    let address = "0.0.0.0:7777";
+    let address = "127.0.0.1:7777";
     let listener = tokio::net::TcpListener::bind(address).await.unwrap();
 
     // Serve axum app
-    axum::serve(listener, app);
+    println!("Listening on http://{}", address);
+    let _ = axum::serve(listener, app).await;
 }
