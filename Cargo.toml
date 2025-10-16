@@ -5,6 +5,8 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "0.8.6", features = ["macros", "ws", "multipart", "http2"] }
+dotenv = "0.15.0"
 serde = { version = "1.0.228", features = ["derive"] }
+sqlx = { version = "0.8.6", features = ["postgres"] }
 tokio = { version = "1.47.1", features = ["full"] }
 uuid = { version = "1.18.1", features = ["v4", "serde"] }
