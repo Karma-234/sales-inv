@@ -1,6 +1,6 @@
 use axum::{Router, routing::get};
 use dotenv::dotenv;
-use sqlx::{PgPool, Postgres, postgres::PgPoolOptions};
+use sqlx::postgres::PgPoolOptions;
 mod mproduct;
 mod shared_var;
 
