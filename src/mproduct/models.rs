@@ -1,7 +1,7 @@
 #[derive(serde::Serialize, serde::Deserialize)]
 #[allow(non_snake_case)]
 pub struct ProductModel {
-    pub id: String,
+    pub id: uuid::Uuid,
     pub name: String,
     pub price: f64,
     pub quantity: u32,
