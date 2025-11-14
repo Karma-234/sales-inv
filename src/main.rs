@@ -1,9 +1,14 @@
 use axum::{Router, routing::get};
+use dotenv::dotenv;
+use sqlx::{PgPool, Postgres, postgres::PgPoolOptions};
 mod mproduct;
 mod shared_var;
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
+    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     println!("Hello, world!");
 
     let app = Router::new().route(
