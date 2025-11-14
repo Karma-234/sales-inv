@@ -1,6 +1,10 @@
-use axum::Json;
+use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::routing::get;
+use axum::{Json, Router};
+
+use crate::{AppState, mproduct};
 
 #[derive(serde::Serialize, Debug, Clone)]
 #[serde(bound = "T: serde::Serialize")]
@@ -55,4 +59,28 @@ impl UserRole {
             UserRole::Guest => "GUEST",
         }
     }
+}
+#[derive(Debug, Default)]
+pub struct FilterOptions {
+    pub page: Option<i64>,
+    pub limit: Option<i64>,
+}
+
+pub fn create_router(app_state: AppState) -> Router {
+    Router::new()
+        .route(
+            &mproduct::routes::get_products(),
+            get(
+                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>| async move {
+                    // construct AppState from the shared Pool and forward to your handler
+                    let op = Query(FilterOptions {
+                        limit: Some(2),
+                        page: Some(3),
+                    });
+                    let state = AppState { db: pool.0 };
+                    mproduct::api::get_product_handler(Some(op), state).await
+                },
+            ),
+        )
+        .with_state(app_state.db)
 }
