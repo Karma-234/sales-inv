@@ -9,6 +9,8 @@ pub async fn get_product_handler() -> MyBaseResponse<ProductModel> {
         price: 19.99,
         quantity: 42,
         pack_price: 0.0,
+        created_at: chrono::Utc::now().naive_utc(),
+        updated_at: chrono::Utc::now().naive_utc(),
     };
 
     MyBaseResponse::ok(Some(product))
