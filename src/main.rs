@@ -1,9 +1,6 @@
-use axum::{
-    Router,
-    http::{
-        HeaderValue, Method,
-        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
-    },
+use axum::http::{
+    HeaderValue, Method,
+    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
 };
 use dotenv::dotenv;
 use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
@@ -13,6 +10,7 @@ use crate::shared_var::create_router;
 mod mproduct;
 mod shared_var;
 
+#[derive(Clone)]
 pub struct AppState {
     db: Pool<Postgres>,
 }

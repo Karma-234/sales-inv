@@ -1,9 +1,10 @@
-use axum::extract::Query;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 
+use crate::mproduct::schema::AddProductSchema;
 use crate::{AppState, mproduct};
 
 #[derive(serde::Serialize, Debug, Clone)]
@@ -16,10 +17,10 @@ pub struct MyBaseResponse<T> {
 
 impl<T> MyBaseResponse<T> {
     /// Convenience constructor for successful responses.
-    pub fn ok(data: Option<T>) -> Self {
+    pub fn ok(data: Option<T>, message: Option<String>) -> Self {
         Self {
             code: 200,
-            message: "OK".to_string(),
+            message: message.unwrap_or("OK".into()),
             data,
         }
     }
@@ -71,6 +72,7 @@ pub fn create_router(app_state: AppState) -> Router {
         .route(
             &mproduct::routes::get_products(),
             get(
+                // mproduct::api::get_product_handler,
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>| async move {
                     // construct AppState from the shared Pool and forward to your handler
                     let op = Query(FilterOptions {
@@ -78,7 +80,17 @@ pub fn create_router(app_state: AppState) -> Router {
                         page: Some(3),
                     });
                     let state = AppState { db: pool.0 };
-                    mproduct::api::get_product_handler(Some(op), state).await
+                    mproduct::api::get_product_handler(op, State(state)).await
+                },
+            ),
+        )
+        .route(
+            "/add_product",
+            post(
+                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                 payload: axum::extract::Json<AddProductSchema>| async move {
+                    let state = AppState { db: pool.0 };
+                    mproduct::api::add_product_handler(payload, State(state)).await;
                 },
             ),
         )

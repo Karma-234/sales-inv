@@ -1,15 +1,18 @@
+use chrono::{DateTime, Utc};
+
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct AddProductSchema {
     #[serde()]
-    pub id: uuid::Uuid,
+    pub id: Option<uuid::Uuid>,
     pub name: String,
     pub price: f64,
     pub quantity: u32,
-    pub pack_price: f64,
+    #[serde(rename = "packPrice")]
+    pub pack_price: Option<f64>,
     #[serde(rename = "createdAt")]
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: Option<DateTime<Utc>>,
     #[serde(rename = "updatedAt")]
-    pub updated_at: chrono::NaiveDateTime,
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -25,7 +28,7 @@ pub struct UpdateProductSchema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pack_price: Option<f64>,
     #[serde(rename = "updatedAt")]
-    pub updated_at: chrono::NaiveDateTime,
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -33,5 +36,5 @@ pub struct DeleteProductSchema {
     #[serde()]
     pub id: uuid::Uuid,
     #[serde(rename = "updatedAt")]
-    pub updated_at: chrono::NaiveDateTime,
+    pub updated_at: Option<DateTime<Utc>>,
 }
