@@ -80,17 +80,27 @@ pub fn create_router(app_state: AppState) -> Router {
                         page: Some(3),
                     });
                     let state = AppState { db: pool.0 };
-                    mproduct::api::get_product_handler(op, State(state)).await
+                    mproduct::handlers::get_product_handler(op, State(state)).await
                 },
             ),
         )
         .route(
-            "/add_product",
+            "/mock",
             post(
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::extract::Json<AddProductSchema>| async move {
                     let state = AppState { db: pool.0 };
-                    mproduct::api::add_product_handler(payload, State(state)).await;
+                    mproduct::handlers::mock_post_handler(State(state), payload).await
+                },
+            ),
+        )
+        .route(
+            "/add-product",
+            post(
+                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                 payload: axum::extract::Json<AddProductSchema>| async move {
+                    let state = AppState { db: pool.0 };
+                    mproduct::handlers::add_product_handler(payload, State(state)).await;
                 },
             ),
         )

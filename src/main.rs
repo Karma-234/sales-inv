@@ -6,7 +6,10 @@ use dotenv::dotenv;
 use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
 use tower_http::cors::CorsLayer;
 
-use crate::shared_var::create_router;
+use crate::{
+    mproduct::models::ProductModel,
+    shared_var::{MyBaseResponse, create_router},
+};
 mod mproduct;
 mod shared_var;
 
