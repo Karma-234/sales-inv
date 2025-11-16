@@ -5,7 +5,7 @@ use sqlx::{Pool, Postgres, query_as};
 
 use crate::AppState;
 use crate::mproduct::models::ProductModel;
-use crate::mproduct::schema::AddProductSchema;
+use crate::mproduct::schema::{AddProductSchema, UpdateProductSchema};
 use crate::shared_var::{FilterOptions, MyBaseResponse};
 
 pub async fn get_product_handler(
@@ -16,6 +16,32 @@ pub async fn get_product_handler(
     let limit = opts.limit.unwrap_or(10);
 
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
+
+    if let Some(search_term) = opts.search {
+        println!("Searching for products with term: {}", search_term);
+        let search_result = query_as!(
+            ProductModel,
+            r#"
+            SELECT *
+            FROM products
+            WHERE name ILIKE $1
+            ORDER BY created_at DESC
+            "#,
+            format!("%{}%", search_term.to_string()),
+        )
+        .fetch_all(&app_state.db)
+        .await;
+        match search_result {
+            Ok(p) => {
+                println!("Fetched products: {:?}", p);
+                return MyBaseResponse::ok(Some(p), Some("Product retrieved successfully".into()));
+            }
+            Err(err) => {
+                eprintln!("database query error: {}", err);
+                return MyBaseResponse::error(500, "Database query failed");
+            }
+        }
+    }
 
     let query_result = query_as!(
         ProductModel,
@@ -132,4 +158,61 @@ pub async fn mock_post_handler(
             MyBaseResponse::error(500, "Database query failed")
         }
     }
+}
+
+pub async fn update_prod_handler(
+    State(app_state): State<AppState>,
+    Json(payload): Json<UpdateProductSchema>,
+) -> MyBaseResponse<ProductModel> {
+    let check_exists = query_as!(
+        ProductModel,
+        r#"
+        SELECT *
+        FROM products
+        WHERE id = $1
+        "#,
+        payload.id,
+    )
+    .fetch_optional(&app_state.db)
+    .await;
+    if let Ok(Some(existing_product)) = check_exists {
+        let updated_prod = ProductModel {
+            id: existing_product.id,
+            name: payload.name.clone().unwrap_or(existing_product.name),
+            price: payload.price.unwrap_or(existing_product.price),
+            quantity: payload.quantity.unwrap_or(existing_product.quantity),
+            pack_price: payload.pack_price.or(existing_product.pack_price),
+            created_at: existing_product.created_at,
+            updated_at: Some(chrono::Utc::now()),
+        };
+        let query_result = query_as!(
+            ProductModel,
+            r#"
+            UPDATE products
+            SET name = $1, price = $2, quantity = $3, pack_price = $4, updated_at = $5
+            WHERE id = $6
+            RETURNING *
+            "#,
+            updated_prod.name,
+            updated_prod.price,
+            updated_prod.quantity,
+            updated_prod.pack_price,
+            updated_prod.updated_at,
+            updated_prod.id,
+        )
+        .fetch_one(&app_state.db)
+        .await;
+        match query_result {
+            Ok(p) => {
+                println!("Fetched products: {:?}", p);
+                return MyBaseResponse::ok(Some(p), Some("Product added successfully".into()));
+            }
+            Err(err) => {
+                eprintln!("database query error: {}", err);
+                return MyBaseResponse::error(500, "Database query failed");
+            }
+        }
+    }
+
+    return MyBaseResponse::error(409, "Product not found!");
 }

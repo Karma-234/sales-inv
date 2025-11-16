@@ -24,17 +24,13 @@ pub struct UpdateProductSchema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub price: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub quantity: Option<u32>,
+    pub quantity: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pack_price: Option<f64>,
-    #[serde(rename = "updatedAt")]
-    pub updated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct DeleteProductSchema {
     #[serde()]
     pub id: uuid::Uuid,
-    #[serde(rename = "updatedAt")]
-    pub updated_at: Option<DateTime<Utc>>,
 }

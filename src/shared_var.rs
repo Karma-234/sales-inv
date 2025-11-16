@@ -1,10 +1,10 @@
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 use axum::{Json, Router};
 
-use crate::mproduct::schema::AddProductSchema;
+use crate::mproduct::schema::{AddProductSchema, UpdateProductSchema};
 use crate::{AppState, mproduct};
 
 #[derive(serde::Serialize, Debug, Clone)]
@@ -61,10 +61,11 @@ impl UserRole {
         }
     }
 }
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, serde::Deserialize)]
 pub struct FilterOptions {
     pub page: Option<i64>,
     pub limit: Option<i64>,
+    pub search: Option<String>,
 }
 
 pub fn create_router(app_state: AppState) -> Router {
@@ -73,11 +74,14 @@ pub fn create_router(app_state: AppState) -> Router {
             &mproduct::routes::get_products(),
             get(
                 // mproduct::api::get_product_handler,
-                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>| async move {
+                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                 filter: axum::extract::Query<FilterOptions>| async move {
                     // construct AppState from the shared Pool and forward to your handler
                     let op = Query(FilterOptions {
                         limit: Some(2),
                         page: Some(3),
+                        // search: Some("Amoxil".to_string()),
+                        search: Some(filter.0.search.unwrap_or_default()),
                     });
                     let state = AppState { db: pool.0 };
                     mproduct::handlers::get_product_handler(op, State(state)).await
@@ -85,7 +89,7 @@ pub fn create_router(app_state: AppState) -> Router {
             ),
         )
         .route(
-            "/mock",
+            &mproduct::routes::mock(),
             post(
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::extract::Json<AddProductSchema>| async move {
@@ -95,7 +99,17 @@ pub fn create_router(app_state: AppState) -> Router {
             ),
         )
         .route(
-            "/add-product",
+            &mproduct::routes::update_product(),
+            put(
+                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                 payload: axum::extract::Json<UpdateProductSchema>| async move {
+                    let state = AppState { db: pool.0 };
+                    mproduct::handlers::update_prod_handler(State(state), payload).await
+                },
+            ),
+        )
+        .route(
+            &mproduct::routes::add_product(),
             post(
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::extract::Json<AddProductSchema>| async move {
