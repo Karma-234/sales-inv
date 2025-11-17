@@ -24,31 +24,31 @@ pub struct AddUserSchema {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-// #[derive(serde::Serialize, serde::Deserialize, Debug)]
-// pub struct UpdateUsersSchema {
-//     #[serde()]
-//     pub id: uuid::Uuid,
-//     #[serde(skip_serializing_if = "Option::is_none")]
-//     pub username: Option<String>,
-//     #[serde(skip_serializing_if = "Option::is_none")]
-//     #[serde(rename = "firstName")]
-//     pub first_name: Option<String>,
-//     #[serde(skip_serializing_if = "Option::is_none")]
-//     #[serde(rename = "lastName")]
-//     pub last_name: Option<String>,
-//     #[serde(skip_serializing_if = "Option::is_none")]
-//     pub email: Option<String>,
-//     #[serde(skip_serializing_if = "Option::is_none")]
-//     pub role: Option<UserRole>,
-//     #[serde(skip_serializing_if = "Option::is_none")]
-//     pub hashed_password: Option<String>,
-//     #[serde(skip_serializing_if = "Option::is_none")]
-//     pub is_verified: Option<bool>,
-//     #[serde(skip_serializing_if = "Option::is_none")]
-//     pub verification_token: Option<String>,
-//     #[serde(skip_serializing_if = "Option::is_none")]
-//     pub token_expiry: Option<DateTime<Utc>>,
-// }
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct UpdateUsersSchema {
+    #[serde()]
+    pub id: uuid::Uuid,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "firstName")]
+    pub first_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "lastName")]
+    pub last_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<UserRole>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hashed_password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_verified: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verification_token: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_expiry: Option<DateTime<Utc>>,
+}
 
 // #[derive(serde::Serialize, serde::Deserialize, Debug)]
 // pub struct DeleteUsersSchema {

@@ -1,6 +1,6 @@
 use crate::AppState;
 use crate::musers::models::MUserModel;
-use crate::musers::schema::AddUserSchema;
+use crate::musers::schema::{AddUserSchema, UpdateUsersSchema};
 use crate::shared_var::{FilterOptions, MyBaseResponse};
 use axum::Json;
 use axum::extract::{Query, State};
@@ -111,5 +111,50 @@ pub async fn create_new_user_handler(
     }
 }
 
-// pub async fn update_user_handler() {}
+pub async fn update_users_handler(
+    State(app): State<AppState>,
+    Json(payload): Json<UpdateUsersSchema>,
+) -> MyBaseResponse<MUserModel> {
+    let now = Utc::now();
+
+    let update_sql = r#"
+        UPDATE users SET
+            username = COALESCE($1, username),
+            first_name = COALESCE($2, first_name),
+            last_name = COALESCE($3, last_name),
+            email = COALESCE($4, email),
+            role = COALESCE($5, role),
+            hashed_password = COALESCE($6, hashed_password),
+            is_verified = COALESCE($7, is_verified),
+            verification_token = COALESCE($8, verification_token),
+            token_expiry = COALESCE($9, token_expiry),
+            updated_at = $10
+        WHERE id = $11
+        RETURNING id, username, first_name, last_name, email, role, hashed_password, created_at, updated_at,
+            is_verified, verification_token, token_expiry
+    "#;
+
+    let res = query_as::<_, MUserModel>(update_sql)
+        .bind(&payload.username)
+        .bind(&payload.first_name)
+        .bind(&payload.last_name)
+        .bind(&payload.email)
+        .bind(&payload.role)
+        .bind(&payload.hashed_password)
+        .bind(&payload.is_verified)
+        .bind(&payload.verification_token)
+        .bind(&payload.token_expiry)
+        .bind(now)
+        .bind(&payload.id)
+        .fetch_one(&app.db)
+        .await;
+
+    match res {
+        Ok(user) => MyBaseResponse::ok(Some(user), Some("User updated".into())),
+        Err(e) => {
+            eprintln!("database update error: {}", e);
+            MyBaseResponse::error(409, format!("DB error: {}", e))
+        }
+    }
+}
 // pub async fn delete_user_handler() {}
