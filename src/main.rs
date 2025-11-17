@@ -11,6 +11,7 @@ use crate::{
     shared_var::{MyBaseResponse, create_router},
 };
 mod mproduct;
+mod shared_ops;
 mod shared_var;
 
 #[derive(Clone)]

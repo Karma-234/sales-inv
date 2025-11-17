@@ -13,3 +13,4 @@ sqlx = { version = "0.8.6", features = ["postgres", "runtime-async-std-native-tl
 tokio = { version = "1.47.1", features = ["full"] }
 tower-http = { version = "0.6.6", features = ["cors"] }
 uuid = { version = "1.18.1", features = ["v4", "serde"] }
+validator = { version = "0.20.0", features = ["derive", "derive_nightly_features"] }
