@@ -6,7 +6,8 @@ use dotenv::dotenv;
 use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
 use tower_http::cors::CorsLayer;
 
-use crate::shared_var::create_router;
+use crate::{config::Config, shared_var::create_router};
+mod config;
 mod mauth;
 mod mproduct;
 mod musers;
@@ -17,6 +18,7 @@ mod util;
 #[derive(Clone)]
 pub struct AppState {
     db: Pool<Postgres>,
+    env: Config,
 }
 #[tokio::main]
 async fn main() {
@@ -37,6 +39,7 @@ async fn main() {
         .allow_origin(address.parse::<HeaderValue>().unwrap());
 
     let app = create_router(AppState {
+        env: Config { jwt_secret: () },
         db: db_pool.clone(),
     })
     .layer(app_cors);
