@@ -38,7 +38,7 @@ pub fn create_user_router(app: State<AppState>) -> Router {
             ),
         )
         .route(
-            "/users/add",
+            "/add",
             post(
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::Json<crate::musers::schema::AddUserSchema>| async move {
@@ -48,7 +48,7 @@ pub fn create_user_router(app: State<AppState>) -> Router {
             ),
         )
         .route(
-            "/users/get",
+            "/get",
             get(
                 |State(pool): State<Pool<Postgres>>, Query(opts): Query<FilterOptions>| async move {
                     let app = AppState { db: pool.clone() };
@@ -58,7 +58,7 @@ pub fn create_user_router(app: State<AppState>) -> Router {
             ),
         )
         .route(
-            "/users/update",
+            "/update",
             put(
                 |State(pool): State<Pool<Postgres>>, Json(payload): Json<UpdateUsersSchema>| async move {
                     let app = AppState { db: pool.clone() };
@@ -68,7 +68,7 @@ pub fn create_user_router(app: State<AppState>) -> Router {
             ),
         )
         .route(
-            "/users/delete",
+            "/delete",
             delete(
                 |State(pool): State<Pool<Postgres>>, Json(payload): Json<DeleteUsersSchema>| async move {
                     let app = AppState { db: pool.clone() };
