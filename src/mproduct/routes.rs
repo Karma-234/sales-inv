@@ -10,3 +10,7 @@ pub fn mock() -> String {
 pub fn update_product() -> String {
     String::from("/api/v1/products")
 }
+
+pub fn del_product() -> String {
+    String::from("/api/v1/products")
+}

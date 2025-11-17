@@ -1,10 +1,10 @@
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post, put};
+use axum::routing::{delete, get, post, put};
 use axum::{Json, Router};
 
-use crate::mproduct::schema::{AddProductSchema, UpdateProductSchema};
+use crate::mproduct::schema::{AddProductSchema, DeleteProductSchema, UpdateProductSchema};
 use crate::{AppState, mproduct};
 
 #[derive(serde::Serialize, Debug, Clone)]
@@ -105,6 +105,16 @@ pub fn create_router(app_state: AppState) -> Router {
                  payload: axum::extract::Json<UpdateProductSchema>| async move {
                     let state = AppState { db: pool.0 };
                     mproduct::handlers::update_prod_handler(State(state), payload).await
+                },
+            ),
+        )
+        .route(
+            &mproduct::routes::del_product(),
+            delete(
+                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                 payload: axum::extract::Json<DeleteProductSchema>| async move {
+                    let state = AppState { db: pool.0 };
+                    mproduct::handlers::del_prod_handler(payload, State(state)).await
                 },
             ),
         )

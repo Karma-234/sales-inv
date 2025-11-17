@@ -5,7 +5,7 @@ use sqlx::{Pool, Postgres, query_as};
 
 use crate::AppState;
 use crate::mproduct::models::ProductModel;
-use crate::mproduct::schema::{AddProductSchema, UpdateProductSchema};
+use crate::mproduct::schema::{AddProductSchema, DeleteProductSchema, UpdateProductSchema};
 use crate::shared_var::{FilterOptions, MyBaseResponse};
 
 pub async fn get_product_handler(
@@ -95,18 +95,6 @@ pub async fn add_product_handler(
     }
 
     MyBaseResponse::error(500, "Database query failed")
-
-    // match query_result {
-    //     Ok(p) => {
-    //         println!("Fetched products after adding: {:?}", p);
-    //         // MyBaseResponse::ok(Some(p), None)
-    //         MyBaseResponse::ok(Some(p), Some("Product added successfully".into()))
-    //     }
-    //     Err(err) => {
-    //         eprintln!("database query error: {}", err);
-    //         MyBaseResponse::error(400, "Database query failed")
-    //     }
-    // }
 }
 pub async fn mock_post_handler(
     State(app_state): State<AppState>,
@@ -215,4 +203,34 @@ pub async fn update_prod_handler(
     }
 
     return MyBaseResponse::error(409, "Product not found!");
+}
+
+pub async fn del_prod_handler(
+    Json(payload): Json<DeleteProductSchema>,
+    State(app): State<AppState>,
+) -> MyBaseResponse<ProductModel> {
+    println!("Request received to delete product: {:?}", payload);
+
+    let query_result = query_as!(
+        ProductModel,
+        r#"
+        DELETE FROM products
+        WHERE id = $1
+        RETURNING *
+        "#,
+        payload.id,
+    )
+    .fetch_one(&app.db)
+    .await;
+
+    match query_result {
+        Ok(p) => {
+            println!("Fetched products: {:?}", p);
+            return MyBaseResponse::ok(Some(p), Some("Product deleted successfully".into()));
+        }
+        Err(err) => {
+            eprintln!("database query error: {}", err);
+            return MyBaseResponse::error(500, "Database query failed");
+        }
+    }
 }
