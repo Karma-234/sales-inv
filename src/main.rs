@@ -7,6 +7,7 @@ use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
 use tower_http::cors::CorsLayer;
 
 use crate::shared_var::create_router;
+mod mauth;
 mod mproduct;
 mod musers;
 mod shared_ops;
