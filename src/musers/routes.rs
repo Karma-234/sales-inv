@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use crate::mproduct::models::ProductModel;
+use crate::musers::handlers::create_new_user_handler;
 use crate::{AppState, shared_var::MyBaseResponse};
+use axum::routing::post;
 use axum::{Router, extract::State, routing::get};
 
 pub fn create_user_router(app: State<AppState>) -> Router {
@@ -27,6 +29,22 @@ pub fn create_user_router(app: State<AppState>) -> Router {
                     MyBaseResponse::ok(Some(resp), Some("healthy".into()))
                 },
             ),
+        )
+        .route(
+            "/users",
+            post(
+                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                 payload: axum::Json<crate::musers::schema::AddUserSchema>| async move {
+                    let app = AppState { db: pool.0 };
+                    create_new_user_handler(State(app), payload).await
+                },
+            ),
+        )
+        .route(
+            "/service",
+            get(|| async move {
+                MyBaseResponse::ok(Some("Data".to_string()), Some("Service started".into()));
+            }),
         )
         .with_state(app.db.clone());
 }

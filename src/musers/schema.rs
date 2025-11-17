@@ -6,7 +6,7 @@ use crate::musers::models::UserRole;
 #[derive(serde::Serialize, serde::Deserialize, Debug, Validate)]
 pub struct AddUserSchema {
     #[serde()]
-    pub id: uuid::Uuid,
+    pub id: Option<uuid::Uuid>,
     pub username: String,
     #[serde(rename = "firstName")]
     pub first_name: String,
@@ -14,7 +14,7 @@ pub struct AddUserSchema {
     pub last_name: String,
     pub email: String,
     pub role: UserRole,
-    pub hashed_password: String,
+    pub password: String,
     pub is_verified: bool,
     pub verification_token: Option<String>,
     pub token_expiry: Option<DateTime<Utc>>,
