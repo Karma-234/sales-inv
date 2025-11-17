@@ -47,7 +47,7 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
                         search: Some(filter.0.search.unwrap_or_default()),
                     });
                     let state = AppState { db: pool.0 };
-                    mproduct::handlers::get_product_handler(op, State(state)).await
+                    return mproduct::handlers::get_product_handler(op, State(state)).await;
                 },
             ),
         )
@@ -57,7 +57,7 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::extract::Json<AddProductSchema>| async move {
                     let state = AppState { db: pool.0 };
-                    mproduct::handlers::mock_post_handler(State(state), payload).await
+                    return mproduct::handlers::mock_post_handler(State(state), payload).await;
                 },
             ),
         )
@@ -67,7 +67,7 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::extract::Json<UpdateProductSchema>| async move {
                     let state = AppState { db: pool.0 };
-                    mproduct::handlers::update_prod_handler(State(state), payload).await
+                    return mproduct::handlers::update_prod_handler(State(state), payload).await;
                 },
             ),
         )
@@ -77,7 +77,7 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::extract::Json<DeleteProductSchema>| async move {
                     let state = AppState { db: pool.0 };
-                    mproduct::handlers::del_prod_handler(payload, State(state)).await
+                    return mproduct::handlers::del_prod_handler(payload, State(state)).await;
                 },
             ),
         )
@@ -87,7 +87,7 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::extract::Json<AddProductSchema>| async move {
                     let state = AppState { db: pool.0 };
-                    mproduct::handlers::add_product_handler(payload, State(state)).await;
+                    return mproduct::handlers::add_product_handler(payload, State(state)).await;
                 },
             ),
         )
