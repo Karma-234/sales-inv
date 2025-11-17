@@ -12,6 +12,7 @@ mod mproduct;
 mod musers;
 mod shared_ops;
 mod shared_var;
+mod util;
 
 #[derive(Clone)]
 pub struct AppState {
