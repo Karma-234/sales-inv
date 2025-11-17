@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::{Query, State};
 // use
-use sqlx::{Pool, Postgres, query_as};
+use sqlx::query_as;
 
 use crate::AppState;
 use crate::mproduct::models::ProductModel;
@@ -15,7 +15,7 @@ pub async fn get_product_handler(
 ) -> MyBaseResponse<Vec<ProductModel>> {
     let limit = opts.limit.unwrap_or(10);
 
-    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+    let _offset = (opts.page.unwrap_or(1) - 1) * limit;
 
     if let Some(search_term) = opts.search {
         println!("Searching for products with term: {}", search_term);
