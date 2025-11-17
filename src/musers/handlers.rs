@@ -2,6 +2,7 @@ use crate::AppState;
 use crate::musers::models::MUserModel;
 use crate::musers::schema::{AddUserSchema, DeleteUsersSchema, UpdateUsersSchema};
 use crate::shared_var::{FilterOptions, MyBaseResponse};
+use crate::util::passsword::hash_password;
 use axum::Json;
 use axum::extract::{Query, State};
 
@@ -73,7 +74,7 @@ pub async fn create_new_user_handler(
     Json(payload): Json<AddUserSchema>,
 ) -> MyBaseResponse<MUserModel> {
     // TODO: replace with a real password hashing function (bcrypt/argon2)
-    let rehashed_password = &payload.password;
+    let rehashed_password = hash_password(&payload.password);
 
     let now = Utc::now();
 
@@ -116,6 +117,10 @@ pub async fn update_users_handler(
     Json(payload): Json<UpdateUsersSchema>,
 ) -> MyBaseResponse<MUserModel> {
     let now = Utc::now();
+    let rehashed_password: Option<String> = payload
+        .hashed_password
+        .as_ref()
+        .and_then(|pw| hash_password(pw));
 
     let update_sql = r#"
         UPDATE users SET
@@ -140,7 +145,7 @@ pub async fn update_users_handler(
         .bind(&payload.last_name)
         .bind(&payload.email)
         .bind(&payload.role)
-        .bind(&payload.hashed_password)
+        .bind(&rehashed_password)
         .bind(&payload.is_verified)
         .bind(&payload.verification_token)
         .bind(&payload.token_expiry)
