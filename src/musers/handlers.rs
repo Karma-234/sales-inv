@@ -1,7 +1,7 @@
 use crate::AppState;
 use crate::musers::models::{MUserModel, UserRole};
 use crate::musers::schema::AddUserSchema;
-use crate::shared_var::MyBaseResponse;
+use crate::shared_var::{FilterOptions, MyBaseResponse};
 use axum::Json;
 use axum::extract::{Query, State};
 
@@ -9,8 +9,7 @@ use chrono::Utc;
 use sqlx::query_as;
 use uuid::Uuid;
 
-/// Insert a new user into the `users` table and return the created row.
-/// Expects AddUserSchema to provide: username, first_name, last_name, email, password (or hashed_password), role (optional).
+//
 pub async fn create_new_user_handler(
     State(app): State<AppState>,
     Json(payload): Json<AddUserSchema>,
@@ -54,7 +53,64 @@ pub async fn create_new_user_handler(
     }
 }
 
-pub async fn get_user_handler() {}
+pub async fn get_users_handler(
+    State(app): State<AppState>,
+    Query(opts): Query<Option<FilterOptions>>,
+) -> MyBaseResponse<Vec<MUserModel>> {
+    // Implementation for getting users with filtering, pagination, etc. based on FilterOptions
+    if let Some(filter_opts) = opts {
+        // Example: handle search term filtering
+        if let Some(search_term) = filter_opts.search {
+            let pattern = format!("%{}%", search_term);
+            let limit = filter_opts.limit.unwrap_or(10) as i64;
+            let offset = filter_opts.page.unwrap_or(0) as i64 * limit;
+
+            let search_sql = r#"
+                SELECT *,
+                ts_rank(search_tsv, plainto_tsquery('english', $1)) AS rank
+                FROM users
+                WHERE search_tsv @@ plainto_tsquery('english', $1)
+                ORDER BY rank DESC
+                LIMIT $2 OFFSET $3;
+                    "#;
+
+            let res = query_as::<_, MUserModel>(search_sql)
+                .bind(&pattern)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(&app.db)
+                .await;
+
+            return match res {
+                Ok(users) => {
+                    println!("Fetched users: {:?}", users);
+                    MyBaseResponse::ok(Some(users), Some("Users fetched".into()))
+                }
+                Err(e) => {
+                    eprintln!("database query error: {}", e);
+                    MyBaseResponse::error(409, format!("DB error: {}", e))
+                }
+            };
+        }
+    }
+
+    // Implementation for getting all users
+    let insert_sql = r#"
+        SELECT *
+        FROM users
+        ORDER BY created_at DESC
+        "#;
+    let res = query_as::<_, MUserModel>(insert_sql)
+        .fetch_all(&app.db)
+        .await;
+    match res {
+        Ok(user) => MyBaseResponse::ok(Some(user), Some("User created".into())),
+        Err(e) => {
+            eprintln!("database insert error: {}", e);
+            MyBaseResponse::error(409, format!("DB error: {}", e))
+        }
+    }
+}
 
 pub async fn update_user_handler() {}
 pub async fn delete_user_handler() {}
