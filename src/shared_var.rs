@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 
 use axum::{Json, Router};
 
-use crate::{AppState, mproduct};
+use crate::{AppState, mproduct, musers};
 
 #[derive(serde::Serialize, Debug, Clone)]
 #[serde(bound = "T: serde::Serialize")]
@@ -53,9 +53,11 @@ pub struct FilterOptions {
 }
 
 pub fn create_router(app_state: AppState) -> Router {
-    return Router::new().nest(
-        "/api/v1",
-        mproduct::routes::create_prod_router(State(app_state.clone())),
-    );
+    return Router::new()
+        .nest(
+            "/api/v1",
+            mproduct::routes::create_prod_router(State(app_state.clone())),
+        )
+        .merge(musers::routes::create_user_router(State(app_state.clone())));
     // .nest("/api/v1/")
 }
