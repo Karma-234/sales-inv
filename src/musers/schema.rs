@@ -50,8 +50,8 @@ pub struct UpdateUsersSchema {
     pub token_expiry: Option<DateTime<Utc>>,
 }
 
-// #[derive(serde::Serialize, serde::Deserialize, Debug)]
-// pub struct DeleteUsersSchema {
-//     #[serde()]
-//     pub id: uuid::Uuid,
-// }
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct DeleteUsersSchema {
+    #[serde()]
+    pub id: uuid::Uuid,
+}

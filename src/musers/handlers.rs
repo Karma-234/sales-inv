@@ -1,6 +1,6 @@
 use crate::AppState;
 use crate::musers::models::MUserModel;
-use crate::musers::schema::{AddUserSchema, UpdateUsersSchema};
+use crate::musers::schema::{AddUserSchema, DeleteUsersSchema, UpdateUsersSchema};
 use crate::shared_var::{FilterOptions, MyBaseResponse};
 use axum::Json;
 use axum::extract::{Query, State};
@@ -157,4 +157,26 @@ pub async fn update_users_handler(
         }
     }
 }
-// pub async fn delete_user_handler() {}
+pub async fn delete_users_handler(
+    State(app): State<AppState>,
+    Json(payload): Json<DeleteUsersSchema>,
+) -> MyBaseResponse<MUserModel> {
+    let delete_sql = r#"
+        DELETE FROM users
+        WHERE id = $1
+        RETURNING *;
+    "#;
+
+    let res = query_as::<_, MUserModel>(delete_sql)
+        .bind(&payload.id)
+        .fetch_one(&app.db)
+        .await;
+
+    match res {
+        Ok(datt) => MyBaseResponse::ok(Some(datt), Some("User deleted".into())),
+        Err(e) => {
+            eprintln!("database delete error: {}", e);
+            return MyBaseResponse::error(409, format!("DB error: {}", e));
+        }
+    }
+}

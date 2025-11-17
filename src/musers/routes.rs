@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
 use crate::mproduct::models::ProductModel;
-use crate::musers::handlers::{create_new_user_handler, get_users_handler, update_users_handler};
-use crate::musers::schema::UpdateUsersSchema;
+use crate::musers::handlers::{
+    create_new_user_handler, delete_users_handler, get_users_handler, update_users_handler,
+};
+use crate::musers::schema::{DeleteUsersSchema, UpdateUsersSchema};
 use crate::shared_var::FilterOptions;
 use crate::{AppState, shared_var::MyBaseResponse};
 use axum::Json;
 use axum::extract::Query;
-use axum::routing::{post, put};
+use axum::routing::{delete, post, put};
 use axum::{Router, extract::State, routing::get};
 use sqlx::{Pool, Postgres};
 
@@ -62,6 +64,16 @@ pub fn create_user_router(app: State<AppState>) -> Router {
                     let app = AppState { db: pool.clone() };
                     let data = Json(payload);
                     return update_users_handler(State(app), data).await;
+                },
+            ),
+        )
+        .route(
+            "/users/delete",
+            delete(
+                |State(pool): State<Pool<Postgres>>, Json(payload): Json<DeleteUsersSchema>| async move {
+                    let app = AppState { db: pool.clone() };
+                    let data = Json(payload);
+                    return delete_users_handler(State(app), data).await;
                 },
             ),
         )
