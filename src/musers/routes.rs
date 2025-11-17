@@ -7,6 +7,7 @@ use crate::{AppState, shared_var::MyBaseResponse};
 use axum::extract::Query;
 use axum::routing::post;
 use axum::{Router, extract::State, routing::get};
+use sqlx::{Pool, Postgres};
 
 pub fn create_user_router(app: State<AppState>) -> Router {
     return Router::new()
@@ -28,36 +29,29 @@ pub fn create_user_router(app: State<AppState>) -> Router {
                     } else {
                         resp.insert("db_status".to_string(), "disconnected".to_string());
                     }
-                    MyBaseResponse::ok(Some(resp), Some("healthy".into()))
+                    MyBaseResponse::ok(Some(resp), Some("healthy".into()));
                 },
             ),
         )
         .route(
-            "/users",
+            "/users/add",
             post(
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::Json<crate::musers::schema::AddUserSchema>| async move {
                     let app = AppState { db: pool.0 };
-                    create_new_user_handler(State(app), payload).await
+                    return create_new_user_handler(State(app), payload).await;
                 },
             ),
         )
         .route(
-            "/get-users",
+            "/users/get",
             get(
-                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
-                 opts: axum::extract::Query<FilterOptions>| async move {
-                    let app = AppState { db: pool.0 };
-                    let query_opts = Query(Some(opts.0));
-                    get_users_handler(State(app), query_opts).await;
+                |State(pool): State<Pool<Postgres>>, Query(opts): Query<FilterOptions>| async move {
+                    let app = AppState { db: pool.clone() };
+                    let query_opts = Query(Some(opts));
+                    return get_users_handler(State(app), query_opts).await;
                 },
             ),
-        )
-        .route(
-            "/service",
-            get(|| async move {
-                MyBaseResponse::ok(Some("Data".to_string()), Some("Service started".into()));
-            }),
         )
         .with_state(app.db.clone());
 }
