@@ -25,6 +25,7 @@ async fn main() {
     dotenv().ok();
     let address = "127.0.0.1:7777";
     let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let jwt_secret = std::env::var("JWT_SECRET_KEY").expect("DATABASE_URL must be set");
     let db_pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&db_url)
@@ -39,7 +40,9 @@ async fn main() {
         .allow_origin(address.parse::<HeaderValue>().unwrap());
 
     let app = create_router(AppState {
-        env: Config { jwt_secret: () },
+        env: Config {
+            jwt_secret: jwt_secret.clone(),
+        },
         db: db_pool.clone(),
     })
     .layer(app_cors);

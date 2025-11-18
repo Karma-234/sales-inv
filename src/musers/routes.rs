@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::config::Config;
 use crate::mproduct::models::ProductModel;
 use crate::musers::handlers::{
     create_new_user_handler, delete_users_handler, get_users_handler, update_users_handler,
@@ -42,7 +43,7 @@ pub fn create_user_router(app: State<AppState>) -> Router {
             post(
                 |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
                  payload: axum::Json<crate::musers::schema::AddUserSchema>| async move {
-                    let app = AppState { db: pool.0 };
+                    let app = AppState { db: pool.0, env: Config::init() };
                     return create_new_user_handler(State(app), payload).await;
                 },
             ),
@@ -51,7 +52,7 @@ pub fn create_user_router(app: State<AppState>) -> Router {
             "/get",
             get(
                 |State(pool): State<Pool<Postgres>>, Query(opts): Query<FilterOptions>| async move {
-                    let app = AppState { db: pool.clone() };
+                    let app = AppState { db: pool.clone(), env:Config::init() };
                     let query_opts = Query(Some(opts));
                     return get_users_handler(State(app), query_opts).await;
                 },
@@ -61,7 +62,7 @@ pub fn create_user_router(app: State<AppState>) -> Router {
             "/update",
             put(
                 |State(pool): State<Pool<Postgres>>, Json(payload): Json<UpdateUsersSchema>| async move {
-                    let app = AppState { db: pool.clone() };
+                    let app = AppState { db: pool.clone(), env: Config::init() };
                     let data = Json(payload);
                     return update_users_handler(State(app), data).await;
                 },
@@ -71,7 +72,7 @@ pub fn create_user_router(app: State<AppState>) -> Router {
             "/delete",
             delete(
                 |State(pool): State<Pool<Postgres>>, Json(payload): Json<DeleteUsersSchema>| async move {
-                    let app = AppState { db: pool.clone() };
+                    let app = AppState { db: pool.clone() , env: Config::init()};
                     let data = Json(payload);
                     return delete_users_handler(State(app), data).await;
                 },

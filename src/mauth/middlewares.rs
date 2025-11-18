@@ -1,66 +1,77 @@
 use crate::{
     AppState, musers::models::MUserModel, shared_var::MyBaseResponse, util::token::decode_token,
 };
-use axum::{
-    extract::{Request, State},
-    http::header,
-    middleware::Next,
-};
-use axum_extra::extract::CookieJar;
+use axum::extract::State;
+use axum::http::header;
+use axum::response::IntoResponse;
+use axum::{extract::Request, middleware::Next, response::Response};
+use serde::{Deserialize, Serialize};
 use sqlx::query_as;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct JWTAuthMiddeware {
+pub struct JWTAuthMiddleware {
     pub user: MUserModel,
 }
+
 pub async fn auth_middleware(
-    request: Request,
+    mut request: Request,
     next: Next,
-    cookie_jar: CookieJar,
     State(app): State<AppState>,
-) {
-    let cookies = cookie_jar
-        .get("token")
-        .map(|cookie| cookie.value().to_string())
+) -> Response {
+    // try Authorization: Bearer <token>
+    let token_opt = request
+        .headers()
+        .get(header::AUTHORIZATION)
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer ").map(|t| t.to_owned()))
+        // fallback: parse Cookie header manually for token=...
         .or_else(|| {
             request
                 .headers()
-                .get(header::AUTHORIZATION)
-                .and_then(|auth_header| {
-                    auth_header.to_str().ok().and_then(|auth_value| {
-                        if auth_value.starts_with("Bearer ") {
-                            Some(auth_value[7..].to_owned())
-                        } else {
-                            None
-                        }
-                    })
+                .get(header::COOKIE)
+                .and_then(|c| c.to_str().ok())
+                .and_then(|cookie_str| {
+                    cookie_str
+                        .split(';')
+                        .map(|s| s.trim())
+                        .find_map(|pair| pair.strip_prefix("token=").map(|v| v.to_string()))
                 })
         });
-    let token = cookies
-        .ok_or_else(|| HttpError::unauthorized(ErrorMessage::TokenNotProvided.to_string()))?;
-    let token_details = match decode_token(token, app.env.jwt_secret.as_bytes()) {
-        Ok(e) => e,
-        Err(e) => MyBaseResponse::error(401, "Unauthorised!"),
+
+    let token = match token_opt {
+        Some(t) => t,
+        None => return MyBaseResponse::<()>::error(401, "Unauthorised!").into_response(),
     };
 
-    let user_id = uuid::Uuid::parse_str(&token_details.to_string())
-        .map_err(|_| MyBaseResponse::error(401, "Invalid credentials!"));
+    let user_id_str = match decode_token(&token, app.env.jwt_secret.as_bytes()) {
+        Ok(s) => s,
+        Err(_) => return MyBaseResponse::<()>::error(401, "Unauthorised!").into_response(),
+    };
+
+    let user_id = match uuid::Uuid::parse_str(user_id_str.trim()) {
+        Ok(id) => id,
+        Err(_) => return MyBaseResponse::<()>::error(401, "Invalid credentials!").into_response(),
+    };
 
     let query_text = r#"
-    SELEECT * FROM users 
-    WHERE id = $1"#;
-    let res = query_as::<_, MUserModel>(query_text)
-        .bind(&user_id)
-        .fetch_one(&app.db)
-        .await
-        .map_err(|_| MyBaseResponse::error(401, "User does not exist!"));
+        SELECT *
+        FROM users
+        WHERE id = $1
+    "#;
 
-    let user = res
-        .ok()
-        .or_else(|| MyBaseResponse::error(401, "User does not exist!"));
+    let user_res = query_as::<_, MUserModel>(query_text)
+        .bind(user_id)
+        .fetch_one(&app.db)
+        .await;
+
+    let user = match user_res {
+        Ok(u) => u,
+        Err(_) => return MyBaseResponse::<()>::error(401, "User does not exist!").into_response(),
+    };
+
     request
         .extensions_mut()
-        .insert(JWTAuthMiddeware { user: user.clone() });
+        .insert(JWTAuthMiddleware { user: user.clone() });
 
-    Ok(next.run(request).await)
+    next.run(request).await
 }

@@ -1,9 +1,13 @@
 use axum::{Json, extract::State};
+use chrono::{Duration, Utc};
 use sqlx::query_as;
 
 use crate::{
-    AppState, mauth::schemas::LoginUserSchema, musers::models::MUserModel,
-    shared_var::MyBaseResponse, util::passsword::compare_password,
+    AppState,
+    mauth::schemas::LoginUserSchema,
+    musers::models::MUserModel,
+    shared_var::MyBaseResponse,
+    util::{passsword::compare_password, token::create_token},
 };
 
 pub async fn user_login_handler(
@@ -12,6 +16,7 @@ pub async fn user_login_handler(
 ) -> MyBaseResponse<MUserModel> {
     let user_pass = payload.password;
     let user_email = payload.email;
+    let now = Utc::now();
     let get_user_sql = r#"
     SELECT * FROM users
     WHERE email = $1
@@ -23,8 +28,46 @@ pub async fn user_login_handler(
     return match res {
         Ok(users) => {
             let verify = compare_password(&user_pass, &users.hashed_password);
+            let token_expiry = now + Duration::minutes(30);
             if verify {
-                return MyBaseResponse::ok(Some(users), Some("Login successfull".into()));
+                let token = create_token(
+                    &users.id.to_string(),
+                    &app.env.jwt_secret.as_bytes(),
+                    token_expiry.timestamp(),
+                );
+                match token {
+                    Ok(token_detail) => {
+                        let update_token_sql = r#"
+                            UPDATE users
+                            SET
+                            is_verified = true
+                            verification_token = COALESCE($1, verification_token),
+                            token_expiry = COALESCE($2, token_expiry),
+                            updated_at = COALESCE($3, updated_at)
+                            WHERE id = $1
+                            RETURNING *
+                            "#;
+                        let res = query_as::<_, MUserModel>(update_token_sql)
+                            .bind(token_detail.to_string())
+                            .bind(token_expiry)
+                            .bind(now)
+                            .fetch_one(&app.db)
+                            .await;
+                        match res {
+                            Ok(data) => {
+                                return MyBaseResponse::ok(
+                                    Some(data),
+                                    Some(format!("Could not create JWT!",)),
+                                );
+                            }
+                            Err(_) => return MyBaseResponse::error(401, "Could not authorize!"),
+                        }
+                    }
+
+                    Err(err) => {
+                        return MyBaseResponse::error(401, format!("Could not create JWT!",));
+                    }
+                }
             }
             return MyBaseResponse::error(401, format!("Invalid Credentials!",));
         }
