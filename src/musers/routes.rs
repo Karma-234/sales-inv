@@ -18,32 +18,33 @@ pub fn create_user_router(app: State<AppState>) -> Router {
     return Router::new()
         .route(
             "/health",
-            get(
-                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>| async move {
-                    let mut resp = HashMap::new();
-                    resp.insert("status".to_string(), "ok".to_string());
-                    let query_result = sqlx::query_as!(
-                        ProductModel,
-                        r#"SELECT * FROM products 
+            get(|pool: axum::extract::State<AppState>| async move {
+                let mut resp = HashMap::new();
+                resp.insert("status".to_string(), "ok".to_string());
+                let query_result = sqlx::query_as!(
+                    ProductModel,
+                    r#"SELECT * FROM products 
                     LIMIT 1"#
-                    )
-                    .fetch_one(&pool.0)
-                    .await;
-                    if let Some(_) = query_result.ok() {
-                        resp.insert("db_status".to_string(), "connected".to_string());
-                    } else {
-                        resp.insert("db_status".to_string(), "disconnected".to_string());
-                    }
-                    MyBaseResponse::ok(Some(resp), Some("healthy".into()));
-                },
-            ),
+                )
+                .fetch_one(&pool.0.db)
+                .await;
+                if let Some(_) = query_result.ok() {
+                    resp.insert("db_status".to_string(), "connected".to_string());
+                } else {
+                    resp.insert("db_status".to_string(), "disconnected".to_string());
+                }
+                MyBaseResponse::ok(Some(resp), Some("healthy".into()));
+            }),
         )
         .route(
             "/add",
             post(
-                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                |pool: axum::extract::State<AppState>,
                  payload: axum::Json<crate::musers::schema::AddUserSchema>| async move {
-                    let app = AppState { db: pool.0, env: Config::init() };
+                    let app = AppState {
+                        db: pool.0.db,
+                        env: pool.0.env,
+                    };
                     return create_new_user_handler(State(app), payload).await;
                 },
             ),
@@ -51,8 +52,11 @@ pub fn create_user_router(app: State<AppState>) -> Router {
         .route(
             "/get",
             get(
-                |State(pool): State<Pool<Postgres>>, Query(opts): Query<FilterOptions>| async move {
-                    let app = AppState { db: pool.clone(), env:Config::init() };
+                |State(pool): State<AppState>, Query(opts): Query<FilterOptions>| async move {
+                    let app = AppState {
+                        db: pool.db.clone(),
+                        env: pool.env,
+                    };
                     let query_opts = Query(Some(opts));
                     return get_users_handler(State(app), query_opts).await;
                 },
@@ -61,8 +65,11 @@ pub fn create_user_router(app: State<AppState>) -> Router {
         .route(
             "/update",
             put(
-                |State(pool): State<Pool<Postgres>>, Json(payload): Json<UpdateUsersSchema>| async move {
-                    let app = AppState { db: pool.clone(), env: Config::init() };
+                |State(pool): State<AppState>, Json(payload): Json<UpdateUsersSchema>| async move {
+                    let app = AppState {
+                        db: pool.db.clone(),
+                        env: pool.env,
+                    };
                     let data = Json(payload);
                     return update_users_handler(State(app), data).await;
                 },
@@ -71,12 +78,15 @@ pub fn create_user_router(app: State<AppState>) -> Router {
         .route(
             "/delete",
             delete(
-                |State(pool): State<Pool<Postgres>>, Json(payload): Json<DeleteUsersSchema>| async move {
-                    let app = AppState { db: pool.clone() , env: Config::init()};
+                |State(pool): State<AppState>, Json(payload): Json<DeleteUsersSchema>| async move {
+                    let app = AppState {
+                        db: pool.db.clone(),
+                        env: pool.env,
+                    };
                     let data = Json(payload);
                     return delete_users_handler(State(app), data).await;
                 },
             ),
         )
-        .with_state(app.db.clone());
+        .with_state(app.0);
 }

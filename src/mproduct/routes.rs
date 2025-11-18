@@ -37,10 +37,8 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
         .route(
             &mproduct::routes::get_products(),
             get(
-                // mproduct::api::get_product_handler,
-                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                |pool: axum::extract::State<AppState>,
                  filter: axum::extract::Query<FilterOptions>| async move {
-                    // construct AppState from the shared Pool and forward to your handler
                     let op = Query(FilterOptions {
                         limit: Some(2),
                         page: Some(3),
@@ -48,8 +46,8 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
                         search: Some(filter.0.search.unwrap_or_default()),
                     });
                     let state = AppState {
-                        db: pool.0,
-                        env: Config::init(),
+                        db: pool.0.db,
+                        env: pool.0.env,
                     };
                     return mproduct::handlers::get_product_handler(op, State(state)).await;
                 },
@@ -58,11 +56,11 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
         .route(
             &mproduct::routes::mock(),
             post(
-                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                |pool: axum::extract::State<AppState>,
                  payload: axum::extract::Json<AddProductSchema>| async move {
                     let state = AppState {
-                        db: pool.0,
-                        env: Config::init(),
+                        db: pool.0.db,
+                        env: pool.0.env,
                     };
                     return mproduct::handlers::mock_post_handler(State(state), payload).await;
                 },
@@ -71,11 +69,11 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
         .route(
             &mproduct::routes::update_product(),
             put(
-                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                |pool: axum::extract::State<AppState>,
                  payload: axum::extract::Json<UpdateProductSchema>| async move {
                     let state = AppState {
-                        db: pool.0,
-                        env: Config::init(),
+                        db: pool.0.db,
+                        env: pool.0.env,
                     };
                     return mproduct::handlers::update_prod_handler(State(state), payload).await;
                 },
@@ -84,11 +82,11 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
         .route(
             &mproduct::routes::del_product(),
             delete(
-                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                |pool: axum::extract::State<AppState>,
                  payload: axum::extract::Json<DeleteProductSchema>| async move {
                     let state = AppState {
-                        db: pool.0,
-                        env: Config::init(),
+                        db: pool.0.db,
+                        env: pool.0.env,
                     };
                     return mproduct::handlers::del_prod_handler(payload, State(state)).await;
                 },
@@ -97,15 +95,15 @@ pub fn create_prod_router(app: State<AppState>) -> Router {
         .route(
             &mproduct::routes::add_product(),
             post(
-                |pool: axum::extract::State<sqlx::Pool<sqlx::Postgres>>,
+                |pool: axum::extract::State<AppState>,
                  payload: axum::extract::Json<AddProductSchema>| async move {
                     let state = AppState {
-                        db: pool.0,
-                        env: Config::init(),
+                        db: pool.0.db,
+                        env: pool.0.env,
                     };
                     return mproduct::handlers::add_product_handler(payload, State(state)).await;
                 },
             ),
         )
-        .with_state(app.db.clone());
+        .with_state(app.0);
 }

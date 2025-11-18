@@ -9,7 +9,6 @@ use crate::mproduct::schema::{AddProductSchema, DeleteProductSchema, UpdateProdu
 use crate::shared_var::{FilterOptions, MyBaseResponse};
 
 pub async fn get_product_handler(
-    // opts: Option<Query<FilterOptions>>,
     Query(opts): Query<FilterOptions>,
     State(app_state): State<AppState>,
 ) -> MyBaseResponse<Vec<ProductModel>> {
