@@ -37,7 +37,7 @@ pub fn create_token(
 pub fn decode_token<T: Into<String>>(token: T, secret: &[u8]) -> Result<String, Error> {
     let decode_t = decode::<TokenClaims>(
         token.into(),
-        &DecodingKey::from_secret(secret),
+        &DecodingKey::from_secret(secret.as_ref()),
         &Validation::new(Algorithm::HS256),
     );
     match decode_t {

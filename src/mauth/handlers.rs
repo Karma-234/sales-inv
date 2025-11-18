@@ -28,8 +28,9 @@ pub async fn user_login_handler(
     return match res {
         Ok(users) => {
             let verify = compare_password(&user_pass, &users.hashed_password);
-            let token_expiry = now + Duration::minutes(30);
-            if verify {
+
+            if verify == true {
+                let token_expiry = now + Duration::minutes(30);
                 let token = create_token(
                     &users.id.to_string(),
                     &app.env.jwt_secret.as_bytes(),
@@ -37,34 +38,38 @@ pub async fn user_login_handler(
                 );
                 match token {
                     Ok(token_detail) => {
+                        println!("Gemerated Token: {:?}", token_detail);
+
                         let update_token_sql = r#"
                             UPDATE users
                             SET
-                            is_verified = true
-                            verification_token = COALESCE($1, verification_token),
-                            token_expiry = COALESCE($2, token_expiry),
-                            updated_at = COALESCE($3, updated_at)
+                            is_verified = true,
+                            verification_token = COALESCE($2, verification_token),
+                            token_expiry = COALESCE($3, token_expiry),
+                            updated_at = COALESCE($4, updated_at)
                             WHERE id = $1
                             RETURNING *
                             "#;
                         let res = query_as::<_, MUserModel>(update_token_sql)
-                            .bind(token_detail.to_string())
+                            .bind(&users.id)
+                            .bind(token_detail)
                             .bind(token_expiry)
                             .bind(now)
                             .fetch_one(&app.db)
                             .await;
+                        println!("Returned result : {:?}", res);
                         match res {
                             Ok(data) => {
                                 return MyBaseResponse::ok(
                                     Some(data),
-                                    Some(format!("Could not create JWT!",)),
+                                    Some(format!("Login Succesful!",)),
                                 );
                             }
                             Err(_) => return MyBaseResponse::error(401, "Could not authorize!"),
                         }
                     }
 
-                    Err(err) => {
+                    Err(_) => {
                         return MyBaseResponse::error(401, format!("Could not create JWT!",));
                     }
                 }
