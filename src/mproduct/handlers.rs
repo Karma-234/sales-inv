@@ -110,12 +110,16 @@ pub async fn add_product_handler(
     )
     .fetch_one(&app.db)
     .await;
-
-    if let Err(e) = query_result {
-        println!("database insertion error: {}", e);
+    match query_result {
+        Ok(p) => {
+            println!("Fetched products: {:?}", p);
+            return MyBaseResponse::ok(Some(p), Some("Product added successfully".into()));
+        }
+        Err(err) => {
+            eprintln!("database query error: {}", err);
+            MyBaseResponse::db_err(err)
+        }
     }
-
-    MyBaseResponse::error(500, "Database query failed")
 }
 
 #[utoipa::path(
@@ -174,11 +178,11 @@ pub async fn update_prod_handler(
         match query_result {
             Ok(p) => {
                 println!("Fetched products: {:?}", p);
-                return MyBaseResponse::ok(Some(p), Some("Product added successfully".into()));
+                return MyBaseResponse::ok(Some(p), Some("Product updated successfully".into()));
             }
             Err(err) => {
                 eprintln!("database query error: {}", err);
-                return MyBaseResponse::error(500, "Database query failed");
+                return MyBaseResponse::db_err(err);
             }
         }
     }
@@ -221,7 +225,7 @@ pub async fn del_prod_handler(
         }
         Err(err) => {
             eprintln!("database query error: {}", err);
-            return MyBaseResponse::error(500, "Database query failed");
+            return MyBaseResponse::db_err(err);
         }
     }
 }

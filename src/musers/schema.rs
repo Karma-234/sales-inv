@@ -1,9 +1,10 @@
 use chrono::{DateTime, Utc};
+use utoipa::ToSchema;
 use validator::Validate;
 
 use crate::musers::models::UserRole;
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Validate)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Validate, ToSchema, PartialEq)]
 pub struct AddUserSchema {
     #[serde()]
     pub id: Option<uuid::Uuid>,
@@ -24,7 +25,7 @@ pub struct AddUserSchema {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema, PartialEq)]
 pub struct UpdateUsersSchema {
     #[serde()]
     pub id: uuid::Uuid,
@@ -50,7 +51,7 @@ pub struct UpdateUsersSchema {
     pub token_expiry: Option<DateTime<Utc>>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema, PartialEq)]
 pub struct DeleteUsersSchema {
     #[serde()]
     pub id: uuid::Uuid,

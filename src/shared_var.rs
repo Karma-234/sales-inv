@@ -2,11 +2,14 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 use axum::{Json, Router};
-use utoipa::{OpenApi, ToSchema};
+use utoipa::{IntoParams, OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{AppState, mauth, mproduct, musers};
+use crate::util::helpers::map_pg_database_error;
 
+
+// 
 #[derive(serde::Serialize, Debug, Clone, ToSchema)]
 #[serde(bound = "T: serde::Serialize")]
 pub struct MyBaseResponse<T> {
@@ -33,27 +36,27 @@ impl<T> MyBaseResponse<T> {
             data: None,
         }
     }
-        pub fn db_err(e: sqlx::Error) -> MyBaseResponse<Vec<FieldError>> {
+        pub fn db_err(e: sqlx::Error) -> Self {
         use sqlx::error::DatabaseError;
         match e {
-            sqlx::Error::RowNotFound => MyBaseResponse {
+            sqlx::Error::RowNotFound => Self {
                 code: 404,
                 message: "Record not found".into(),
-                data: Some(vec![FieldError::new("", "Record not found", "ROW_NOT_FOUND")]),
+                data: None,
             },
             sqlx::Error::Database(db) => {
-                let fe_list = map_pg_database_error(db.as_ref());
-                let code = if fe_list.iter().any(|f| f.code == "23505") { 409 } else { 400 };
-                MyBaseResponse {
-                    code,
-                    message: fe_list.get(0).map(|f| f.message.clone()).unwrap_or("Database constraint error".into()),
-                    data: Some(fe_list),
+                let error = map_pg_database_error(db.as_ref());
+                
+                Self {
+                    code: error.code.parse().unwrap_or(500),
+                    message: error.message,
+                    data: None,
                 }
             }
-            _ => MyBaseResponse {
+            _ => Self {
                 code: 500,
                 message: format!("Database error: {}", e),
-                data: Some(vec![FieldError::new("", e.to_string(), "DB_ERROR")]),
+                data: None,
             },
         }
     }
@@ -70,7 +73,7 @@ where
     }
 }
 
-#[derive(Debug, Default, Clone, serde::Deserialize, ToSchema)]
+#[derive(Debug, Default, Clone, serde::Deserialize, ToSchema, IntoParams)]
 pub struct FilterOptions {
     pub page: Option<i64>,
     pub limit: Option<i64>,

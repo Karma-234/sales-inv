@@ -57,7 +57,7 @@ pub async fn get_users_handler(
                 }
                 Err(e) => {
                     eprintln!("database query error: {}", e);
-                    MyBaseResponse::error(409, format!("DB error: {}", e))
+                    MyBaseResponse::db_err(e)
                 }
             };
         }
@@ -76,7 +76,7 @@ pub async fn get_users_handler(
         Ok(user) => MyBaseResponse::ok(Some(user), Some("User created".into())),
         Err(e) => {
             eprintln!("database insert error: {}", e);
-            MyBaseResponse::error(409, format!("DB error: {}", e))
+            MyBaseResponse::db_err(e)
         }
     }
 }
@@ -129,7 +129,7 @@ pub async fn create_new_user_handler(
         Ok(user) => MyBaseResponse::ok(Some(user), Some("User created".into())),
         Err(e) => {
             eprintln!("database insert error: {}", e);
-            MyBaseResponse::error(409, format!("DB error: {}", e))
+            MyBaseResponse::db_err(e)
         }
     }
 }
@@ -190,7 +190,7 @@ pub async fn update_users_handler(
         Ok(user) => MyBaseResponse::ok(Some(user), Some("User updated".into())),
         Err(e) => {
             eprintln!("database update error: {}", e);
-            MyBaseResponse::error(409, format!("DB error: {}", e))
+            MyBaseResponse::db_err(e)
         }
     }
 }
@@ -224,7 +224,7 @@ pub async fn delete_users_handler(
         Ok(datt) => MyBaseResponse::ok(Some(datt), Some("User deleted".into())),
         Err(e) => {
             eprintln!("database delete error: {}", e);
-            return MyBaseResponse::error(409, format!("DB error: {}", e));
+            return MyBaseResponse::db_err(e);
         }
     }
 }
