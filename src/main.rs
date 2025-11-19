@@ -44,11 +44,8 @@ async fn main() {
     })
     .layer(app_cors);
 
-    // Define IP and listener
-
     let listener = tokio::net::TcpListener::bind(address).await.unwrap();
 
-    // Serve axum app
     println!("Listening on http://{}", address);
     let _ = axum::serve(listener, app).await;
 }

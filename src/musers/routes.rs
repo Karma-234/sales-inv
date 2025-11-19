@@ -14,7 +14,7 @@ use axum::routing::{delete, post, put};
 use axum::{Router, extract::State, routing::get};
 use sqlx::{Pool, Postgres};
 
-pub fn create_user_router(app: State<AppState>) -> Router {
+pub fn create_user_router(app: AppState) -> Router {
     return Router::new()
         .route(
             "/health",
@@ -88,5 +88,5 @@ pub fn create_user_router(app: State<AppState>) -> Router {
                 },
             ),
         )
-        .with_state(app.0);
+        .with_state(app);
 }

@@ -1,4 +1,3 @@
-use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
@@ -56,14 +55,14 @@ pub fn create_router(app_state: AppState) -> Router {
     return Router::new()
         .nest(
             "/api/v1/products",
-            mproduct::routes::create_prod_router(State(app_state.clone())),
+            mproduct::routes::create_prod_router(app_state.clone()),
         )
         .nest(
             "/api/v1/users",
-            musers::routes::create_user_router(State(app_state.clone())),
+            musers::routes::create_user_router(app_state.clone()),
         )
         .nest(
             "/api/v1/auth",
-            mauth::routes::create_auth_router(State(app_state.clone())),
+            mauth::routes::create_auth_router(app_state.clone()),
         );
 }
