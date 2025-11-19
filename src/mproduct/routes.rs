@@ -22,10 +22,10 @@ pub fn create_prod_router(app: AppState) -> Router {
                 |pool: axum::extract::State<AppState>,
                  filter: axum::extract::Query<FilterOptions>| async move {
                     let op = Query(FilterOptions {
-                        limit: Some(2),
-                        page: Some(3),
+                        limit: filter.limit.as_ref().and_then(|f| Some(f.clone())),
+                        page: filter.page.as_ref().and_then(|f| Some(f.clone())),
                         // search: Some("Amoxil".to_string()),
-                        search: filter.search.clone(),
+                        search: filter.search.as_ref().and_then(|f| Some(f.clone())),
                     });
                     let state = AppState {
                         db: pool.0.db,
@@ -44,7 +44,7 @@ pub fn create_prod_router(app: AppState) -> Router {
                         db: pool.0.db,
                         env: pool.0.env,
                     };
-                    return mproduct::handlers::update_prod_handler(State(state), payload).await;
+                    return mproduct::handlers::update_product_handler(State(state), payload).await;
                 },
             )
             .layer(MyAuthPermsLayer {}),
@@ -58,7 +58,7 @@ pub fn create_prod_router(app: AppState) -> Router {
                         db: pool.0.db,
                         env: pool.0.env,
                     };
-                    return mproduct::handlers::del_prod_handler(payload, State(state)).await;
+                    return mproduct::handlers::del_product_handler(payload, State(state)).await;
                 },
             ),
         )

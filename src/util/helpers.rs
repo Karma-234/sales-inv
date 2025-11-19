@@ -29,15 +29,13 @@ pub fn map_pg_database_error(db_err: &(dyn DatabaseError + 'static)) -> FieldErr
 
     // best-effort field detection
     let mut field = db_err.constraint().unwrap_or("").to_string();
-    if let pg = db_err.downcast_ref::<sqlx::postgres::PgDatabaseError>() {
-        // pg: &PgDatabaseError
-        if let Some(col) = pg.column() {
-            field = col.to_string();
-        } else if let Some(constraint) = pg.constraint() {
-            field = constraint.to_string();
-        } else if let Some(table) = pg.table() {
-            field = table.to_string();
-        }
+    let pg = db_err.downcast_ref::<sqlx::postgres::PgDatabaseError>();
+    if let Some(col) = pg.column() {
+        field = col.to_string();
+    } else if let Some(constraint) = pg.constraint() {
+        field = constraint.to_string();
+    } else if let Some(table) = pg.table() {
+        field = table.to_string();
     }
 
     match code.as_str() {

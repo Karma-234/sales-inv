@@ -12,12 +12,12 @@ use crate::{
 
 #[utoipa::path(
     post,
-    path = "/auth/login", 
+    path = "/api/v1/auth/login", 
     tag = "Authentication",
     request_body = LoginUserSchema,
     responses(
-        (status = 200, description = "User logged in successfully", body = MUserModel),
-        (status = 401, description = "Unauthorized"),
+        (status = 200, description = "User logged in successfully", body = MyBaseResponse<MUserModel>),
+        (status = 401, description = "Unauthorized", body = MyBaseResponse<MUserModel>),
     )
 )]
 pub async fn user_login_handler(
@@ -35,7 +35,7 @@ pub async fn user_login_handler(
         .bind(user_email)
         .fetch_one(&app.db)
         .await;
-    return match res {
+    match res {
         Ok(users) => {
             let verify = compare_password(&user_pass, &users.hashed_password);
 
@@ -48,7 +48,7 @@ pub async fn user_login_handler(
                 );
                 match token {
                     Ok(token_detail) => {
-                        // println!("Gemerated Token: {:?}", token_detail);
+                        println!("Gemerated Token: {:?}", token_detail);
 
                         let update_token_sql = r#"
                             UPDATE users
@@ -67,16 +67,13 @@ pub async fn user_login_handler(
                             .bind(now)
                             .fetch_one(&app.db)
                             .await;
-                        // println!("Returned result : {:?}", res);
-                        match res {
+
+                        return match res {
                             Ok(data) => {
-                                return MyBaseResponse::ok(
-                                    Some(data),
-                                    Some(format!("Login Succesful!",)),
-                                );
+                                MyBaseResponse::ok(Some(data), Some(format!("Login Succesful!",)))
                             }
-                            Err(_) => return MyBaseResponse::error(401, "Could not authorize!"),
-                        }
+                            Err(_) => MyBaseResponse::error(401, "Could not authorize!"),
+                        };
                     }
 
                     Err(_) => {
@@ -84,8 +81,11 @@ pub async fn user_login_handler(
                     }
                 }
             }
-            return MyBaseResponse::error(401, format!("Invalid Credentials!",));
+            return MyBaseResponse::error(401, format!("Invalid Credentials!"));
         }
-        Err(e) => MyBaseResponse::error(401, format!("DB error: {}", e)),
+
+        Err(e) => {
+            return MyBaseResponse::error(401, format!("DB error: {}", e));
+        }
     };
 }

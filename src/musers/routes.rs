@@ -52,13 +52,19 @@ pub fn create_user_router(app: AppState) -> Router {
         .route(
             "/get",
             get(
-                |State(pool): State<AppState>, Query(opts): Query<FilterOptions>| async move {
+                |pool: axum::extract::State<AppState>,
+                 filter: axum::extract::Query<FilterOptions>| async move {
                     let app = AppState {
                         db: pool.db.clone(),
-                        env: pool.env,
+                        env: pool.env.clone(),
                     };
-                    let query_opts = Query(Some(opts));
-                    return get_users_handler(State(app), query_opts).await;
+                    let op = Query(FilterOptions {
+                        limit: filter.limit.as_ref().and_then(|f| Some(f.clone())),
+                        page: filter.page.as_ref().and_then(|f| Some(f.clone())),
+                        // search: Some("Amoxil".to_string()),
+                        search: filter.search.as_ref().and_then(|f| Some(f.clone())),
+                    });
+                    return get_users_handler(State(app), op).await;
                 },
             )
             .layer(MyAuthPermsLayer {}),
@@ -69,7 +75,7 @@ pub fn create_user_router(app: AppState) -> Router {
                 |State(pool): State<AppState>, Json(payload): Json<UpdateUsersSchema>| async move {
                     let app = AppState {
                         db: pool.db.clone(),
-                        env: pool.env,
+                        env: pool.env.clone(),
                     };
                     let data = Json(payload);
                     return update_users_handler(State(app), data).await;
@@ -83,7 +89,7 @@ pub fn create_user_router(app: AppState) -> Router {
                 |State(pool): State<AppState>, Json(payload): Json<DeleteUsersSchema>| async move {
                     let app = AppState {
                         db: pool.db.clone(),
-                        env: pool.env,
+                        env: pool.env.clone(),
                     };
                     let data = Json(payload);
                     return delete_users_handler(State(app), data).await;

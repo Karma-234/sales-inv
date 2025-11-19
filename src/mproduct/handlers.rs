@@ -10,15 +10,16 @@ use crate::shared_var::{FilterOptions, MyBaseResponse};
 
 #[utoipa::path(
     get,
-    path = "/products/get", 
+    path = "/api/v1/products/get", 
     tag = "Products",
     params(
         FilterOptions
     ),
     responses(
-        (status = 200, description = "Products fetched successfully", body = [ProductModel]),
-        (status = 500, description = "Database error"),
-    )
+        (status = 200, description = "Products fetched successfully", body = MyBaseResponse<Vec<ProductModel>>),
+        (status = 500, description = "Database error", body = MyBaseResponse<Vec<ProductModel>>),
+    ),
+     security(("bearerAuth" = [])), 
 )]
 pub async fn get_product_handler(
     Query(opts): Query<FilterOptions>,
@@ -79,13 +80,14 @@ pub async fn get_product_handler(
 
 #[utoipa::path(
     post,
-    path = "/products/add", 
+    path = "/api/v1/products/add", 
     tag = "Products",
     request_body = AddProductSchema,
     responses(
         (status = 200, description = "Product added successfully", body = ProductModel),
-        (status = 500, description = "Database error"),
-    )
+        (status = 500, description = "Database error", body = MyBaseResponse<ProductModel>),
+    ),
+     security(("bearerAuth" = [])), 
 )]
 pub async fn add_product_handler(
     Json(payload): Json<AddProductSchema>,
@@ -124,16 +126,17 @@ pub async fn add_product_handler(
 
 #[utoipa::path(
     put,
-    path = "/products/update", 
+    path = "/api/v1/products/update", 
     tag = "Products",
     request_body = UpdateProductSchema,
     responses(
-        (status = 200, description = "Product updated successfully", body = ProductModel),
-        (status = 409, description = "Product not found"),
-        (status = 500, description = "Database error"),
-    )
+        (status = 200, description = "Product updated successfully", body = MyBaseResponse<ProductModel>),
+        (status = 409, description = "Product not found", body = MyBaseResponse<ProductModel>),
+        (status = 500, description = "Database error", body = MyBaseResponse<ProductModel>),
+    ),
+     security(("bearerAuth" = [])), 
 )]
-pub async fn update_prod_handler(
+pub async fn update_product_handler(
     State(app_state): State<AppState>,
     Json(payload): Json<UpdateProductSchema>,
 ) -> MyBaseResponse<ProductModel> {
@@ -196,11 +199,12 @@ pub async fn update_prod_handler(
     tag = "Products",
     request_body = DeleteProductSchema,
     responses(
-        (status = 200, description = "Product deleted successfully", body = ProductModel),
-        (status = 500, description = "Database error"),
-    )
+        (status = 200, description = "Product deleted successfully", body = MyBaseResponse<ProductModel>),
+        (status = 500, description = "Database error", body = MyBaseResponse<ProductModel>),
+    ),
+     security(("bearerAuth" = [])), 
 )]
-pub async fn del_prod_handler(
+pub async fn del_product_handler(
     Json(payload): Json<DeleteProductSchema>,
     State(app): State<AppState>,
 ) -> MyBaseResponse<ProductModel> {

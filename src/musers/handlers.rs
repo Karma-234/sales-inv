@@ -11,30 +11,47 @@ use sqlx::query_as;
 
 #[utoipa::path(
     get,
-    path = "/users/get", 
+    path = "/api/v1/users/get", 
     tag = "Users",
     params(
         FilterOptions
     ),
     responses(
-        (status = 200, description = "Users fetched successfully", body = [MUserModel]),
-        (status = 409, description = "Database error"),
-    )
+        (status = 200, description = "Users fetched successfully", body = MyBaseResponse<Vec<MUserModel>>),
+        (status = 409, description = "Database error", body = MyBaseResponse<Vec<MUserModel>>),
+    ),
+     security(("bearerAuth" = [])), 
 )]
 
 pub async fn get_users_handler(
     State(app): State<AppState>,
-    Query(opts): Query<Option<FilterOptions>>,
+    Query(opts): Query<FilterOptions>,
 ) -> MyBaseResponse<Vec<MUserModel>> {
     // Implementation for getting users with filtering, pagination, etc. based on FilterOptions
-    if let Some(filter_opts) = opts {
-        // Example: handle search term filtering
-        if let Some(search_term) = filter_opts.search {
-            let pattern = format!("%{}%", search_term);
-            let limit = filter_opts.limit.unwrap_or(10) as i64;
-            let offset = filter_opts.page.unwrap_or(0) as i64 * limit;
+    if opts == FilterOptions::default() {
+        // If no filter options provided, return all users
+        let insert_sql = r#"
+            SELECT *
+            FROM users
+            ORDER BY created_at DESC
+            "#;
+        let res = query_as::<_, MUserModel>(insert_sql)
+            .fetch_all(&app.db)
+            .await;
+        return match res {
+            Ok(user) => MyBaseResponse::ok(Some(user), Some("User created".into())),
+            Err(e) => {
+                eprintln!("database insert error: {}", e);
+                MyBaseResponse::db_err(e)
+            }
+        };
+    }
+    if let Some(search_term) = opts.search {
+        let pattern = format!("%{}%", search_term);
+        let limit = opts.limit.unwrap_or(10);
+        let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
-            let search_sql = r#"
+        let search_sql = r#"
                 SELECT *,
                 ts_rank(search_tsv, plainto_tsquery('english', $1)) AS rank
                 FROM users
@@ -43,53 +60,54 @@ pub async fn get_users_handler(
                 LIMIT $2 OFFSET $3;
                     "#;
 
-            let res = query_as::<_, MUserModel>(search_sql)
-                .bind(&pattern)
-                .bind(limit)
-                .bind(offset)
-                .fetch_all(&app.db)
-                .await;
+        let res = query_as::<_, MUserModel>(search_sql)
+            .bind(&pattern)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&app.db)
+            .await;
 
-            return match res {
-                Ok(users) => {
-                    println!("Fetched users: {:?}", users);
-                    MyBaseResponse::ok(Some(users), Some("Users fetched".into()))
-                }
-                Err(e) => {
-                    eprintln!("database query error: {}", e);
-                    MyBaseResponse::db_err(e)
-                }
-            };
-        }
+        return match res {
+            Ok(users) => {
+                println!("Fetched users: {:?}", users);
+                MyBaseResponse::ok(Some(users), Some("Users fetched".into()))
+            }
+            Err(e) => {
+                eprintln!("database query error: {}", e);
+                MyBaseResponse::db_err(e)
+            }
+        };
     }
-
-    // Implementation for getting all users
     let insert_sql = r#"
-        SELECT *
-        FROM users
-        ORDER BY created_at DESC
-        "#;
+            SELECT *
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2
+            "#;
     let res = query_as::<_, MUserModel>(insert_sql)
+        .bind(opts.limit.unwrap_or(10))
+        .bind((opts.page.unwrap_or(1) - 1) * opts.limit.unwrap_or(10))
         .fetch_all(&app.db)
         .await;
-    match res {
+    return match res {
         Ok(user) => MyBaseResponse::ok(Some(user), Some("User created".into())),
         Err(e) => {
             eprintln!("database insert error: {}", e);
             MyBaseResponse::db_err(e)
         }
-    }
+    };
 }
 
 #[utoipa::path(
     post,
-    path = "/users/create", 
+    path = "/api/v1/users/create", 
     tag = "Users",
     request_body = AddUserSchema,
     responses(
         (status = 200, description = "User created successfully", body = MUserModel),
         (status = 409, description = "Database error"),
-    )
+    ),
+     security(("bearerAuth" = [])), 
 )]
 pub async fn create_new_user_handler(
     State(app): State<AppState>,
@@ -136,13 +154,14 @@ pub async fn create_new_user_handler(
 
 #[utoipa::path(
     put,
-    path = "/users/update", 
+    path = "/api/v1/users/update", 
     tag = "Users",
     request_body = UpdateUsersSchema,
     responses(
         (status = 200, description = "User updated successfully", body = MUserModel),
         (status = 409, description = "Database error"),
-    )
+    ),
+     security(("bearerAuth" = [])), 
 )]
 pub async fn update_users_handler(
     State(app): State<AppState>,
@@ -197,13 +216,14 @@ pub async fn update_users_handler(
 
 #[utoipa::path(
     delete,
-    path = "/users/delete", 
+    path = "/api/v1/users/delete", 
     tag = "Users",
     request_body = DeleteUsersSchema,
     responses(
         (status = 200, description = "User deleted successfully", body = MUserModel),
         (status = 409, description = "Database error"),
-    )
+    ),
+     security(("bearerAuth" = [])), 
 )]
 pub async fn delete_users_handler(
     State(app): State<AppState>,

@@ -2,8 +2,14 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 use axum::{Json, Router};
+use utoipa::openapi::SecurityRequirement;
 use utoipa::{IntoParams, OpenApi, ToSchema};
+use utoipa::openapi::{Components, security::SecurityScheme, security::HttpAuthScheme, security::Http};
 use utoipa_swagger_ui::SwaggerUi;
+
+use utoipa::Modify;
+
+    
 
 use crate::{AppState, mauth, mproduct, musers};
 use crate::util::helpers::map_pg_database_error;
@@ -73,7 +79,7 @@ where
     }
 }
 
-#[derive(Debug, Default, Clone, serde::Deserialize, ToSchema, IntoParams)]
+#[derive(Debug, Default, Clone, serde::Deserialize, ToSchema, IntoParams, PartialEq)]
 pub struct FilterOptions {
     pub page: Option<i64>,
     pub limit: Option<i64>,
@@ -85,6 +91,15 @@ pub struct FilterOptions {
     paths(
 
         mauth::handlers::user_login_handler,
+        musers::handlers::get_users_handler,
+        musers::handlers::create_new_user_handler,
+        musers::handlers::update_users_handler,
+        musers::handlers::delete_users_handler,
+        mproduct::handlers::get_product_handler,
+        mproduct::handlers::add_product_handler,
+        mproduct::handlers::update_product_handler,
+        mproduct::handlers::del_product_handler,
+
 
     ),
     components(
@@ -96,6 +111,14 @@ pub struct FilterOptions {
             mauth::schemas::LoginUserSchema,
             musers::models::MUserModel,
             musers::models::UserRole,
+            musers::schema::AddUserSchema,
+            musers::schema::UpdateUsersSchema,
+            musers::schema::DeleteUsersSchema,
+            FilterOptions,
+            MyBaseResponse::<mproduct::models::ProductModel>,
+            MyBaseResponse::<musers::models::MUserModel>,
+            MyBaseResponse<Vec<mproduct::models::ProductModel>>,
+            MyBaseResponse<Vec<musers::models::MUserModel>>,
             
         )
     ),
@@ -103,10 +126,28 @@ pub struct FilterOptions {
         (name = "Products", description = "APIs for managing products"),
         (name = "Authentication", description = "APIs for user authentication"),
         (name = "Users", description = "APIs for managing users"),
-    )
+    ),
+    modifiers(&SecurityAddon),
+
 )]
+
 pub struct ApiDoc;
+
+pub struct SecurityAddon;
+
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        let components = openapi.components.as_mut().unwrap();
+        components.add_security_scheme(
+            "bearerAuth", 
+            SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)),
+        );
+       openapi.security = Some(vec![ SecurityRequirement::new("bearerAuth", Vec::<String>::new())]);
+    }
+}
+
 pub fn create_router(app_state: AppState) -> Router {
+
     return Router::new()
         .nest(
             "/api/v1",
@@ -129,6 +170,6 @@ pub fn create_router(app_state: AppState) -> Router {
                 ),
         )
         .merge(
-            SwaggerUi::new("/swagger").url("/api-docs/openapi.json", ApiDoc::openapi().clone()),
+            SwaggerUi::new("/swagger").url("/api-docs/openapi.json", ApiDoc::openapi()),
         );
 }

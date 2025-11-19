@@ -21,6 +21,10 @@ pub async fn auth_middleware(
     state: AppState,
 ) -> Result<Request<Body>, Response> {
     // try Authorization: Bearer <token>
+    println!(
+        "Authenticating request...{:?}",
+        request.headers().get(header::AUTHORIZATION)
+    );
     let app = state;
     let token_opt = request
         .headers()
