@@ -4,10 +4,9 @@ use crate::{
     AppState, musers::models::MUserModel, shared_var::MyBaseResponse, util::token::decode_token,
 };
 use axum::body::Body;
-use axum::extract::State;
 use axum::http::header;
 use axum::response::IntoResponse;
-use axum::{extract::Request, middleware::Next, response::Response};
+use axum::{extract::Request, response::Response};
 use serde::{Deserialize, Serialize};
 use sqlx::query_as;
 
@@ -95,14 +94,13 @@ pub async fn auth_middleware(
     Ok(request)
 }
 
-pub async fn auth_middleware_with_admin_perms(
-    mut request: Request,
-) -> Result<Request<Body>, Response> {
+pub async fn auth_middleware_with_admin_perms(request: Request) -> Result<Request<Body>, Response> {
     let req_user = request.extensions().get::<JWTAuthMiddleware>();
     if req_user.is_none() {
         return Err(MyBaseResponse::<()>::error(401, "Unauthorised!").into_response());
     }
     let user = &req_user.unwrap().user;
+
     if user.role != UserRole::Admin {
         return Err(MyBaseResponse::<()>::error(403, "Forbidden!").into_response());
     }

@@ -38,7 +38,7 @@ pub async fn user_login_handler(
                 );
                 match token {
                     Ok(token_detail) => {
-                        println!("Gemerated Token: {:?}", token_detail);
+                        // println!("Gemerated Token: {:?}", token_detail);
 
                         let update_token_sql = r#"
                             UPDATE users
@@ -57,7 +57,7 @@ pub async fn user_login_handler(
                             .bind(now)
                             .fetch_one(&app.db)
                             .await;
-                        println!("Returned result : {:?}", res);
+                        // println!("Returned result : {:?}", res);
                         match res {
                             Ok(data) => {
                                 return MyBaseResponse::ok(

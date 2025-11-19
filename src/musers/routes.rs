@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::config::Config;
+use crate::mauth::layers::{MyAuthLayer, MyAuthPermsLayer};
 use crate::mproduct::models::ProductModel;
 use crate::musers::handlers::{
     create_new_user_handler, delete_users_handler, get_users_handler, update_users_handler,
@@ -12,7 +12,6 @@ use axum::Json;
 use axum::extract::Query;
 use axum::routing::{delete, post, put};
 use axum::{Router, extract::State, routing::get};
-use sqlx::{Pool, Postgres};
 
 pub fn create_user_router(app: AppState) -> Router {
     return Router::new()
@@ -47,7 +46,8 @@ pub fn create_user_router(app: AppState) -> Router {
                     };
                     return create_new_user_handler(State(app), payload).await;
                 },
-            ),
+            )
+            .layer(MyAuthPermsLayer {}),
         )
         .route(
             "/get",
@@ -60,7 +60,8 @@ pub fn create_user_router(app: AppState) -> Router {
                     let query_opts = Query(Some(opts));
                     return get_users_handler(State(app), query_opts).await;
                 },
-            ),
+            )
+            .layer(MyAuthPermsLayer {}),
         )
         .route(
             "/update",
@@ -73,7 +74,8 @@ pub fn create_user_router(app: AppState) -> Router {
                     let data = Json(payload);
                     return update_users_handler(State(app), data).await;
                 },
-            ),
+            )
+            .layer(MyAuthPermsLayer {}),
         )
         .route(
             "/delete",
@@ -86,7 +88,9 @@ pub fn create_user_router(app: AppState) -> Router {
                     let data = Json(payload);
                     return delete_users_handler(State(app), data).await;
                 },
-            ),
+            )
+            .layer(MyAuthPermsLayer {}),
         )
+        .layer(MyAuthLayer { state: app.clone() })
         .with_state(app);
 }
