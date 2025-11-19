@@ -9,6 +9,19 @@ use axum::extract::{Query, State};
 use chrono::Utc;
 use sqlx::query_as;
 
+#[utoipa::path(
+    get,
+    path = "/users/get", 
+    tag = "Users",
+    params(
+        FilterOptions
+    ),
+    responses(
+        (status = 200, description = "Users fetched successfully", body = [MUserModel]),
+        (status = 409, description = "Database error"),
+    )
+)]
+
 pub async fn get_users_handler(
     State(app): State<AppState>,
     Query(opts): Query<Option<FilterOptions>>,
@@ -68,7 +81,16 @@ pub async fn get_users_handler(
     }
 }
 
-//
+#[utoipa::path(
+    post,
+    path = "/users/create", 
+    tag = "Users",
+    request_body = AddUserSchema,
+    responses(
+        (status = 200, description = "User created successfully", body = MUserModel),
+        (status = 409, description = "Database error"),
+    )
+)]
 pub async fn create_new_user_handler(
     State(app): State<AppState>,
     Json(payload): Json<AddUserSchema>,
@@ -112,6 +134,16 @@ pub async fn create_new_user_handler(
     }
 }
 
+#[utoipa::path(
+    put,
+    path = "/users/update", 
+    tag = "Users",
+    request_body = UpdateUsersSchema,
+    responses(
+        (status = 200, description = "User updated successfully", body = MUserModel),
+        (status = 409, description = "Database error"),
+    )
+)]
 pub async fn update_users_handler(
     State(app): State<AppState>,
     Json(payload): Json<UpdateUsersSchema>,
@@ -162,6 +194,17 @@ pub async fn update_users_handler(
         }
     }
 }
+
+#[utoipa::path(
+    delete,
+    path = "/users/delete", 
+    tag = "Users",
+    request_body = DeleteUsersSchema,
+    responses(
+        (status = 200, description = "User deleted successfully", body = MUserModel),
+        (status = 409, description = "Database error"),
+    )
+)]
 pub async fn delete_users_handler(
     State(app): State<AppState>,
     Json(payload): Json<DeleteUsersSchema>,

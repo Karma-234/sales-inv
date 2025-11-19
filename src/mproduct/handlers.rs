@@ -8,6 +8,18 @@ use crate::mproduct::models::ProductModel;
 use crate::mproduct::schema::{AddProductSchema, DeleteProductSchema, UpdateProductSchema};
 use crate::shared_var::{FilterOptions, MyBaseResponse};
 
+#[utoipa::path(
+    get,
+    path = "/products/get", 
+    tag = "Products",
+    params(
+        FilterOptions
+    ),
+    responses(
+        (status = 200, description = "Products fetched successfully", body = [ProductModel]),
+        (status = 500, description = "Database error"),
+    )
+)]
 pub async fn get_product_handler(
     Query(opts): Query<FilterOptions>,
     State(app_state): State<AppState>,
@@ -65,6 +77,16 @@ pub async fn get_product_handler(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/products/add", 
+    tag = "Products",
+    request_body = AddProductSchema,
+    responses(
+        (status = 200, description = "Product added successfully", body = ProductModel),
+        (status = 500, description = "Database error"),
+    )
+)]
 pub async fn add_product_handler(
     Json(payload): Json<AddProductSchema>,
     State(app): State<AppState>,
@@ -96,6 +118,17 @@ pub async fn add_product_handler(
     MyBaseResponse::error(500, "Database query failed")
 }
 
+#[utoipa::path(
+    put,
+    path = "/products/update", 
+    tag = "Products",
+    request_body = UpdateProductSchema,
+    responses(
+        (status = 200, description = "Product updated successfully", body = ProductModel),
+        (status = 409, description = "Product not found"),
+        (status = 500, description = "Database error"),
+    )
+)]
 pub async fn update_prod_handler(
     State(app_state): State<AppState>,
     Json(payload): Json<UpdateProductSchema>,
@@ -153,6 +186,16 @@ pub async fn update_prod_handler(
     return MyBaseResponse::error(409, "Product not found!");
 }
 
+#[utoipa::path(
+    delete,
+    path = "/products/delete", 
+    tag = "Products",
+    request_body = DeleteProductSchema,
+    responses(
+        (status = 200, description = "Product deleted successfully", body = ProductModel),
+        (status = 500, description = "Database error"),
+    )
+)]
 pub async fn del_prod_handler(
     Json(payload): Json<DeleteProductSchema>,
     State(app): State<AppState>,
