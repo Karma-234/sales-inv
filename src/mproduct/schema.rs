@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
+use utoipa::ToSchema;
 use validator::Validate;
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Validate)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Validate, ToSchema, PartialEq)]
 pub struct AddProductSchema {
     #[serde()]
     pub id: Option<uuid::Uuid>,
@@ -18,7 +19,7 @@ pub struct AddProductSchema {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema, PartialEq)]
 pub struct UpdateProductSchema {
     #[serde()]
     pub id: uuid::Uuid,
@@ -32,7 +33,7 @@ pub struct UpdateProductSchema {
     pub pack_price: Option<f64>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, ToSchema, PartialEq)]
 pub struct DeleteProductSchema {
     #[serde()]
     pub id: uuid::Uuid,

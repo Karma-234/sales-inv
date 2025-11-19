@@ -2,6 +2,8 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 use axum::{Json, Router};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{AppState, mauth, mproduct, musers};
 
@@ -51,18 +53,50 @@ pub struct FilterOptions {
     pub search: Option<String>,
 }
 
+#[derive(utoipa::OpenApi)]
+#[openapi(
+    paths(
+
+        mauth::handlers::user_login_handler,
+
+    ),
+    components(
+        schemas(
+            mproduct::schema::AddProductSchema,
+            mproduct::schema::UpdateProductSchema,
+            mproduct::schema::DeleteProductSchema,
+            mproduct::models::ProductModel,
+            mauth::schemas::LoginUserSchema,
+            musers::models::MUserModel,
+            musers::models::UserRole,
+        )
+    ),
+    tags(
+        (name = "Product Management", description = "APIs for managing products"),
+        (name = "Authentication", description = "APIs for user authentication"),
+        (name = "User Management", description = "APIs for managing users"),
+    )
+)]
+pub struct ApiDoc;
 pub fn create_router(app_state: AppState) -> Router {
     return Router::new()
         .nest(
-            "/api/v1/products",
-            mproduct::routes::create_prod_router(app_state.clone()),
+            "/api/v1",
+            Router::new()
+                .nest(
+                    "/auth",
+                    mauth::routes::create_auth_router(app_state.clone()),
+                )
+                .nest(
+                    "/users",
+                    musers::routes::create_user_router(app_state.clone()),
+                )
+                .nest(
+                    "/products",
+                    mproduct::routes::create_prod_router(app_state.clone()),
+                ),
         )
-        .nest(
-            "/api/v1/users",
-            musers::routes::create_user_router(app_state.clone()),
-        )
-        .nest(
-            "/api/v1/auth",
-            mauth::routes::create_auth_router(app_state.clone()),
+        .merge(
+            SwaggerUi::new("/swagger").url("/api-docs/openapi.json", ApiDoc::openapi().clone()),
         );
 }

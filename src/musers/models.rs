@@ -2,8 +2,9 @@ use std::{fmt, str::FromStr};
 
 use chrono::{DateTime, Utc};
 use sqlx::prelude::FromRow;
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::Type, PartialEq, ToSchema)]
 #[serde(rename_all = "PascalCase")]
 #[sqlx(rename_all = "lowercase", type_name = "user_role")]
 pub enum UserRole {
@@ -44,7 +45,7 @@ impl TryFrom<String> for UserRole {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, FromRow)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, FromRow, ToSchema, PartialEq)]
 #[allow(non_snake_case)]
 pub struct MUserModel {
     pub id: uuid::Uuid,

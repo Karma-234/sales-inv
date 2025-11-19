@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
 use sqlx::prelude::FromRow;
+use utoipa::ToSchema;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, FromRow)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, FromRow, ToSchema, PartialEq)]
 #[allow(non_snake_case)]
 pub struct ProductModel {
     pub id: uuid::Uuid,

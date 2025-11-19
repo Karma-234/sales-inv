@@ -10,6 +10,16 @@ use crate::{
     util::{passsword::compare_password, token::create_token},
 };
 
+#[utoipa::path(
+    post,
+    path = "/auth/login", 
+    tag = "Authentication",
+    request_body = LoginUserSchema,
+    responses(
+        (status = 200, description = "User logged in successfully", body = MUserModel),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn user_login_handler(
     State(app): State<AppState>,
     Json(payload): Json<LoginUserSchema>,

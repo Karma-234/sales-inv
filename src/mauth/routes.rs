@@ -8,7 +8,7 @@ use axum::routing::post;
 pub fn create_auth_router(app: AppState) -> Router {
     return Router::new()
         .route(
-            "/login",
+            "/auth/login",
             post(
                 |pool: axum::extract::State<AppState>,
                  payload: axum::Json<LoginUserSchema>| async move {
