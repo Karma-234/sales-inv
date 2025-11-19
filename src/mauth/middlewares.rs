@@ -1,3 +1,5 @@
+use crate::musers::models::UserRole;
+use crate::util::token::has_token_expired;
 use crate::{
     AppState, musers::models::MUserModel, shared_var::MyBaseResponse, util::token::decode_token,
 };
@@ -74,11 +76,35 @@ pub async fn auth_middleware(
             return Err(MyBaseResponse::<()>::error(401, "User does not exist!").into_response());
         }
     };
+    if has_token_expired(user.token_expiry.unwrap().timestamp()) {
+        return Err(MyBaseResponse::<()>::error(401, "Session expired!").into_response());
+    }
 
     request
         .extensions_mut()
         .insert(JWTAuthMiddleware { user: user.clone() });
 
-    // next.run(request).await
+    let req_user = request
+        .extensions()
+        .get::<JWTAuthMiddleware>()
+        .unwrap()
+        .user
+        .clone();
+    println!("Authenticated User in Middleware: {:?}", req_user);
+
+    Ok(request)
+}
+
+pub async fn auth_middleware_with_admin_perms(
+    mut request: Request,
+) -> Result<Request<Body>, Response> {
+    let req_user = request.extensions().get::<JWTAuthMiddleware>();
+    if req_user.is_none() {
+        return Err(MyBaseResponse::<()>::error(401, "Unauthorised!").into_response());
+    }
+    let user = &req_user.unwrap().user;
+    if user.role != UserRole::Admin {
+        return Err(MyBaseResponse::<()>::error(403, "Forbidden!").into_response());
+    }
     Ok(request)
 }

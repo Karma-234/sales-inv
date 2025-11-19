@@ -3,7 +3,7 @@ use std::{fmt, str::FromStr};
 use chrono::{DateTime, Utc};
 use sqlx::prelude::FromRow;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::Type, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 #[sqlx(rename_all = "lowercase", type_name = "user_role")]
 pub enum UserRole {

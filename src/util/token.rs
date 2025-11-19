@@ -45,3 +45,8 @@ pub fn decode_token<T: Into<String>>(token: T, secret: &[u8]) -> Result<String, 
         Err(_) => Err(jsonwebtoken::errors::ErrorKind::InvalidSubject.into()),
     }
 }
+
+pub fn has_token_expired(expiry_timestamp: i64) -> bool {
+    let now = Utc::now().timestamp();
+    now > expiry_timestamp
+}
