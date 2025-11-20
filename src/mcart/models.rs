@@ -76,7 +76,7 @@ pub struct CartItemModel {
     #[serde(rename = "updatedAt")]
     pub updated_at: Option<DateTime<Utc>>,
 }
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, ToSchema, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, ToSchema, PartialEq, FromRow)]
 #[allow(non_snake_case)]
 pub struct CartItemWithProductModel {
     pub id: uuid::Uuid,
@@ -85,13 +85,15 @@ pub struct CartItemWithProductModel {
     #[serde(rename = "productId")]
     pub product_id: uuid::Uuid,
     pub quantity: i32,
-    pub product: Box<mproduct::models::ProductModel>,
+    pub product_name: String,
+    pub product_price: f64,
+    pub product_pack_price: f64,
     #[serde(rename = "createdAt")]
     pub created_at: Option<DateTime<Utc>>,
     #[serde(rename = "updatedAt")]
     pub updated_at: Option<DateTime<Utc>>,
 }
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, ToSchema, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, FromRow, ToSchema)]
 #[allow(non_snake_case)]
 pub struct CartWithItemsModel {
     pub id: uuid::Uuid,
@@ -100,7 +102,8 @@ pub struct CartWithItemsModel {
     pub status: CartStatus,
     #[serde(rename = "totalAmount")]
     pub total_amount: f64,
-    pub items: Vec<CartItemWithProductModel>,
+    #[schema(value_type = Vec<CartItemWithProductModel>)]
+    pub items: Option<sqlx::types::Json<Vec<CartItemWithProductModel>>>,
     #[serde(rename = "createdAt")]
     pub created_at: Option<DateTime<Utc>>,
     #[serde(rename = "updatedAt")]
@@ -113,7 +116,7 @@ impl CartWithItemsModel {
             user_id: cart.user_id,
             status: cart.status,
             total_amount: cart.total_amount,
-            items,
+            items: Some(sqlx::types::Json(items)),
             created_at: cart.created_at,
             updated_at: cart.updated_at,
         }

@@ -11,7 +11,7 @@ use utoipa::Modify;
 
     
 
-use crate::{AppState, mauth, mproduct, musers};
+use crate::{AppState, mauth, mcart, mproduct, musers};
 use crate::util::helpers::map_pg_database_error;
 
 
@@ -99,6 +99,11 @@ pub struct FilterOptions {
         mproduct::handlers::add_product_handler,
         mproduct::handlers::update_product_handler,
         mproduct::handlers::del_product_handler,
+        mcart::handlers::create_cart_handler,
+        mcart::handlers::get_cart_by_user_handler,
+        mcart::handlers::get_open_cart_by_user_handler,
+        mcart::handlers::add_item_to_cart_handler,
+        mcart::handlers::update_item_in_cart_handler,
 
 
     ),
@@ -119,6 +124,18 @@ pub struct FilterOptions {
             MyBaseResponse::<musers::models::MUserModel>,
             MyBaseResponse<Vec<mproduct::models::ProductModel>>,
             MyBaseResponse<Vec<musers::models::MUserModel>>,
+            mcart::schemas::AddCartItemSchema,
+            mcart::schemas::UpdateCartItemSchema,
+            mcart::schemas::DeleteCartItemSchema,
+            mcart::schemas::CreateCartSchema,
+            mcart::schemas::UpdateCartStatusSchema,
+            mcart::schemas::ClearCartSchema,
+            mcart::schemas::CheckoutCartSchema,
+            mcart::schemas::GetCartByUserSchema,
+            MyBaseResponse::<mcart::models::CartModel>,
+            MyBaseResponse::<mcart::models::CartItemModel>,
+            MyBaseResponse::<mcart::models::CartWithItemsModel>,
+            MyBaseResponse::<Vec<mcart::models::CartItemWithProductModel>>,
             
         )
     ),
@@ -126,6 +143,7 @@ pub struct FilterOptions {
         (name = "Products", description = "APIs for managing products"),
         (name = "Authentication", description = "APIs for user authentication"),
         (name = "Users", description = "APIs for managing users"),
+        (name = "Carts", description = "APIs for managing shopping carts")
     ),
     modifiers(&SecurityAddon),
 
@@ -164,6 +182,7 @@ pub fn create_router(app_state: AppState) -> Router {
                     "/products",
                     mproduct::routes::create_prod_router(app_state.clone()),
                 )
+                .nest("/cart", mcart::routes::create_cart_router(app_state.clone()),)
                 .merge(
                     SwaggerUi::new("/swagger")
                         .url("/api-docs/openapi.json", ApiDoc::openapi().clone()),

@@ -1,82 +1,69 @@
 pub struct CartSQLString;
 impl CartSQLString {
-    pub const GET_CART_BY_USER_ID: &'static str = r#"
-        pub const GET_OPEN_CART_BY_USER_ID: &'static str = r#"
-        SELECT
-            c.id,
-            c.user_id,
-            c.status,
-            c.total_amount,
-            c.created_at,
-            c.updated_at,
-            COALESCE(
-                json_agg(
-                json_build_object(
-                    'item_id', ci.id,
-                    'product_id', p.id,
-                    'quantity', ci.quantity,
-                    'unit_amount', ci.unit_amount,
-                    'line_total', ci.line_total,
-                    'product', json_build_object(
-                        'id', p.id,
-                        'name', p.name,
-                        'price', p.price,
-                        'quantity', p.quantity,
-                        'pack_price', p.pack_price,
-                        'created_at', p.created_at,
-                        'updated_at', p.updated_at
-                    ),
-                    'created_at', ci.created_at,
-                    'updated_at', ci.updated_at
-                )
-                ) FILTER (WHERE ci.id IS NOT NULL),
-                '[]'
-            ) AS items
-                FROM carts c
-                LEFT JOIN cart_items ci ON ci.cart_id = c.id
-                LEFT JOIN products p ON p.id = ci.product_id
-                WHERE c.user_id = $1
-                GROUP BY c.id, c.user_id, c.status, c.total_amount, c.created_at, c.updated_at
-    
-    "#;
-
     pub const GET_OPEN_CART_BY_USER_ID: &'static str = r#"
         SELECT
-            c.id,
-            c.user_id,
-            c.status,
-            c.total_amount,
-            c.created_at,
-            c.updated_at,
-            COALESCE(
-                json_agg(
-                json_build_object(
-                    'item_id', ci.id,
-                    'product_id', p.id,
-                    'quantity', ci.quantity,
-                    'unit_amount', ci.unit_amount,
-                    'line_total', ci.line_total,
-                    'product', json_build_object(
-                        'id', p.id,
-                        'name', p.name,
-                        'price', p.price,
-                        'quantity', p.quantity,
-                        'pack_price', p.pack_price,
-                        'created_at', p.created_at,
-                        'updated_at', p.updated_at
-                    ),
-                    'created_at', ci.created_at,
-                    'updated_at', ci.updated_at
-                )
-                ) FILTER (WHERE ci.id IS NOT NULL),
-                '[]'
-            ) AS items
-                FROM carts c
-                LEFT JOIN cart_items ci ON ci.cart_id = c.id
-                LEFT JOIN products p ON p.id = ci.product_id
-                WHERE c.user_id = $1
-                AND c.status = 'Open'
-                GROUP BY c.id, c.user_id, c.status, c.total_amount, c.created_at, c.updated_at
+          c.id,
+          c.user_id,
+          c.status::text,
+          c.total_amount,
+          c.created_at,
+          c.updated_at,
+          (
+            SELECT COALESCE(
+              json_agg(json_build_object(
+                'item_id', ci.id,
+                'product_id', p.id,
+                'quantity', ci.quantity,
+                'unit_amount', ci.unit_amount,
+                'line_total', ci.line_total,
+                'product_name', p.name,
+                'product_price', p.price,
+                'product_pack_price', p.pack_price,
+                'created_at', ci.created_at,
+                'updated_at', ci.updated_at
+              )),
+              '[]'::json
+            )
+            FROM cart_items ci
+            JOIN products p ON p.id = ci.product_id
+            WHERE ci.cart_id = c.id
+          ) AS items
+        FROM carts c
+        WHERE c.user_id = $1 AND c.status = 'Open'
+        LIMIT 1;
+    "#;
+
+    pub const GET_CART_BY_USER_ID: &'static str = r#"
+        SELECT
+          c.id,
+          c.user_id,
+          c.status::text,
+          c.total_amount,
+          c.created_at,
+          c.updated_at,
+          (
+            SELECT COALESCE(
+              json_agg(json_build_object(
+                'item_id', ci.id,
+                'product_id', p.id,
+                'quantity', ci.quantity,
+                'unit_amount', ci.unit_amount,
+                'line_total', ci.line_total,
+                'product_name', p.name,
+                'product_price', p.price,
+                'product_pack_price', p.pack_price,
+                'created_at', ci.created_at,
+                'updated_at', ci.updated_at
+              )),
+              '[]'::json
+            )
+            FROM cart_items ci
+            JOIN products p ON p.id = ci.product_id
+            WHERE ci.cart_id = c.id
+          ) AS items
+        FROM carts c
+        WHERE c.user_id = $1
+        ORDER BY c.created_at DESC;
     "#;
 
     pub const CREATE_CART_ID: &'static str = r#"
