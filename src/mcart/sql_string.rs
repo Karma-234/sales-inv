@@ -1,5 +1,5 @@
 pub struct CartSQLString;
-impl SQLString {
+impl CartSQLString {
     pub const GET_CART_BY_USER_ID: &'static str = r#"
         pub const GET_OPEN_CART_BY_USER_ID: &'static str = r#"
         SELECT

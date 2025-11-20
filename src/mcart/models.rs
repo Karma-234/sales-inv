@@ -85,7 +85,7 @@ pub struct CartItemWithProductModel {
     #[serde(rename = "productId")]
     pub product_id: uuid::Uuid,
     pub quantity: i32,
-    pub product: Box<super::mproduct::models::ProductModel>,
+    pub product: Box<mproduct::models::ProductModel>,
     #[serde(rename = "createdAt")]
     pub created_at: Option<DateTime<Utc>>,
     #[serde(rename = "updatedAt")]

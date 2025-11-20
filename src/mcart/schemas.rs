@@ -17,3 +17,12 @@ pub struct UpdateCartStatusSchema {
     pub id: uuid::Uuid,
     pub status: String,
 }
+pub struct ClearCartSchema {
+    pub cart_id: uuid::Uuid,
+}
+pub struct CheckoutCartSchema {
+    pub cart_id: uuid::Uuid,
+}
+pub struct GetCartByUserSchema {
+    pub user_id: uuid::Uuid,
+}
