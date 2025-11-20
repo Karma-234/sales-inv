@@ -91,6 +91,8 @@ pub struct CartItemWithProductModel {
     #[serde(rename = "updatedAt")]
     pub updated_at: Option<DateTime<Utc>>,
 }
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, ToSchema, PartialEq)]
+#[allow(non_snake_case)]
 pub struct CartWithItemsModel {
     pub id: uuid::Uuid,
     #[serde(rename = "userId")]
