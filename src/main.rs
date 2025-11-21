@@ -9,6 +9,7 @@ use tower_http::cors::CorsLayer;
 use crate::{config::Config, shared_var::create_router};
 mod config;
 mod mauth;
+mod mcart;
 mod mproduct;
 mod musers;
 mod shared_ops;

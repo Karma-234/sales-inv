@@ -1,0 +1,123 @@
+use std::{fmt, str::FromStr};
+
+use chrono::{DateTime, Utc};
+use sqlx::prelude::FromRow;
+use utoipa::ToSchema;
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::Type, PartialEq, ToSchema)]
+#[sqlx(type_name = "cart_status", rename_all = "lowercase")]
+pub enum CartStatus {
+    Open,
+    Refund,
+    Paid,
+    FOC,
+}
+
+impl fmt::Display for CartStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            CartStatus::Open => "open",
+            CartStatus::Refund => "refund",
+            CartStatus::Paid => "paid",
+            CartStatus::FOC => "foc",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl FromStr for CartStatus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Open" | "open" => Ok(CartStatus::Open),
+            "Refund" | "refund" => Ok(CartStatus::Refund),
+            "Paid" | "paid" => Ok(CartStatus::Paid),
+            "FOC" | "foc" => Ok(CartStatus::FOC),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<String> for CartStatus {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        CartStatus::from_str(&value)
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, FromRow, ToSchema, PartialEq)]
+#[allow(non_snake_case)]
+pub struct CartModel {
+    pub id: uuid::Uuid,
+    #[serde(rename = "userId")]
+    pub user_id: uuid::Uuid,
+    pub status: CartStatus,
+    #[serde(rename = "totalAmount")]
+    pub total_amount: f64,
+    #[serde(rename = "createdAt")]
+    pub created_at: Option<DateTime<Utc>>,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: Option<DateTime<Utc>>,
+}
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, FromRow, ToSchema, PartialEq)]
+#[allow(non_snake_case)]
+pub struct CartItemModel {
+    pub id: i64,
+    #[serde(rename = "cartId")]
+    pub cart_id: uuid::Uuid,
+    #[serde(rename = "productId")]
+    pub product_id: uuid::Uuid,
+    pub quantity: i32,
+    #[serde(rename = "createdAt")]
+    pub created_at: Option<DateTime<Utc>>,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: Option<DateTime<Utc>>,
+}
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, ToSchema, PartialEq, FromRow)]
+#[allow(non_snake_case)]
+pub struct CartItemWithProductModel {
+    // pub id: i64,
+    #[serde(rename = "cart_id")]
+    pub cart_id: uuid::Uuid,
+    #[serde(rename = "product_id")]
+    pub product_id: uuid::Uuid,
+    pub quantity: i32,
+    pub product_name: String,
+    pub product_price: f64,
+    pub product_pack_price: f64,
+    #[serde(rename = "created_at")]
+    pub created_at: Option<DateTime<Utc>>,
+    #[serde(rename = "updated_at")]
+    pub updated_at: Option<DateTime<Utc>>,
+}
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, FromRow, ToSchema)]
+#[allow(non_snake_case)]
+pub struct CartWithItemsModel {
+    pub id: uuid::Uuid,
+    #[serde(rename = "userId")]
+    pub user_id: uuid::Uuid,
+    pub status: CartStatus,
+    #[serde(rename = "totalAmount")]
+    pub total_amount: f64,
+    #[schema(value_type = Vec<CartItemWithProductModel>)]
+    pub items: Option<sqlx::types::Json<Vec<CartItemWithProductModel>>>,
+    #[serde(rename = "createdAt")]
+    pub created_at: Option<DateTime<Utc>>,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: Option<DateTime<Utc>>,
+}
+impl CartWithItemsModel {
+    pub fn new(cart: CartModel, items: Vec<CartItemWithProductModel>) -> Self {
+        Self {
+            id: cart.id,
+            user_id: cart.user_id,
+            status: cart.status,
+            total_amount: cart.total_amount,
+            items: Some(sqlx::types::Json(items)),
+            created_at: cart.created_at,
+            updated_at: cart.updated_at,
+        }
+    }
+}
