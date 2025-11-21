@@ -4,7 +4,7 @@ impl CartSQLString {
         SELECT
           c.id,
           c.user_id,
-          c.status::text,
+          c.status,
           c.total_amount,
           c.created_at,
           c.updated_at,
@@ -12,13 +12,16 @@ impl CartSQLString {
             SELECT COALESCE(
               json_agg(json_build_object(
                 'item_id', ci.id,
-                'product_id', p.id,
+                'cart_id', ci.cart_id,
+                'product_id', ci.product_id,
                 'quantity', ci.quantity,
                 'unit_amount', ci.unit_amount,
                 'line_total', ci.line_total,
                 'product_name', p.name,
                 'product_price', p.price,
                 'product_pack_price', p.pack_price,
+                'product_created_at', p.created_at,
+                'product_updated_at', p.updated_at,
                 'created_at', ci.created_at,
                 'updated_at', ci.updated_at
               )),
@@ -29,7 +32,7 @@ impl CartSQLString {
             WHERE ci.cart_id = c.id
           ) AS items
         FROM carts c
-        WHERE c.user_id = $1 AND c.status = 'Open'
+        WHERE c.user_id = $1 AND c.status = 'open'::cart_status
         LIMIT 1;
     "#;
 
@@ -37,7 +40,7 @@ impl CartSQLString {
         SELECT
           c.id,
           c.user_id,
-          c.status::text,
+          c.status,
           c.total_amount,
           c.created_at,
           c.updated_at,
@@ -45,13 +48,16 @@ impl CartSQLString {
             SELECT COALESCE(
               json_agg(json_build_object(
                 'item_id', ci.id,
-                'product_id', p.id,
+                'cart_id', ci.cart_id,
+                'product_id', ci.product_id,
                 'quantity', ci.quantity,
                 'unit_amount', ci.unit_amount,
                 'line_total', ci.line_total,
                 'product_name', p.name,
                 'product_price', p.price,
                 'product_pack_price', p.pack_price,
+                'product_created_at', p.created_at,
+                'product_updated_at', p.updated_at,
                 'created_at', ci.created_at,
                 'updated_at', ci.updated_at
               )),
@@ -70,17 +76,18 @@ impl CartSQLString {
         WITH existing AS (
             SELECT id, user_id, status, total_amount, created_at, updated_at
             FROM carts
-            WHERE user_id = $1 AND status = 'Open'
-            ),
-            inserted AS (
+            WHERE user_id = $1 AND status = 'open'::cart_status
+        ),
+        inserted AS (
             INSERT INTO carts (id, user_id, status, total_amount)
-            SELECT uuid_generate_v4(), $1, 'Open', 0
+            SELECT uuid_generate_v4(), $1, 'open'::cart_status, 0
             WHERE NOT EXISTS (SELECT 1 FROM existing)
             RETURNING id, user_id, status, total_amount, created_at, updated_at
-            )
-            SELECT * FROM inserted
-            UNION ALL
-            SELECT * FROM existing;
+        )
+        SELECT * FROM inserted
+        UNION ALL
+        SELECT * FROM existing
+        LIMIT 1;
     "#;
     pub const INSERT_CART_ITEM: &'static str = r#"
         INSERT INTO cart_items (cart_id, product_id, quantity, unit_amount)
