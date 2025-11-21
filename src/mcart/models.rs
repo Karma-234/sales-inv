@@ -5,8 +5,7 @@ use sqlx::prelude::FromRow;
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::Type, PartialEq, ToSchema)]
-#[serde(rename_all = "PascalCase")]
-#[sqlx(rename_all = "lowercase", type_name = "cart_status")]
+#[sqlx(type_name = "cart_status", rename_all = "lowercase")]
 pub enum CartStatus {
     Open,
     Refund,
@@ -17,10 +16,10 @@ pub enum CartStatus {
 impl fmt::Display for CartStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            CartStatus::Open => "Open",
-            CartStatus::Refund => "Refund",
-            CartStatus::Paid => "Paid",
-            CartStatus::FOC => "FOC",
+            CartStatus::Open => "open",
+            CartStatus::Refund => "refund",
+            CartStatus::Paid => "paid",
+            CartStatus::FOC => "foc",
         };
         write!(f, "{}", s)
     }
@@ -65,7 +64,7 @@ pub struct CartModel {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, FromRow, ToSchema, PartialEq)]
 #[allow(non_snake_case)]
 pub struct CartItemModel {
-    pub id: uuid::Uuid,
+    pub id: i64,
     #[serde(rename = "cartId")]
     pub cart_id: uuid::Uuid,
     #[serde(rename = "productId")]
@@ -79,18 +78,18 @@ pub struct CartItemModel {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, ToSchema, PartialEq, FromRow)]
 #[allow(non_snake_case)]
 pub struct CartItemWithProductModel {
-    pub id: uuid::Uuid,
-    #[serde(rename = "cartId")]
+    // pub id: i64,
+    #[serde(rename = "cart_id")]
     pub cart_id: uuid::Uuid,
-    #[serde(rename = "productId")]
+    #[serde(rename = "product_id")]
     pub product_id: uuid::Uuid,
     pub quantity: i32,
     pub product_name: String,
     pub product_price: f64,
     pub product_pack_price: f64,
-    #[serde(rename = "createdAt")]
+    #[serde(rename = "created_at")]
     pub created_at: Option<DateTime<Utc>>,
-    #[serde(rename = "updatedAt")]
+    #[serde(rename = "updated_at")]
     pub updated_at: Option<DateTime<Utc>>,
 }
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, FromRow, ToSchema)]
