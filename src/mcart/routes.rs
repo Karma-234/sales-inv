@@ -1,6 +1,6 @@
 use crate::{
     AppState,
-    mauth::layers::{MyAuthLayer, MyAuthPermsLayer},
+    mauth::layers::MyAuthLayer,
     mcart::{
         self,
         schemas::{AddCartItemSchema, UpdateCartItemSchema},
@@ -9,8 +9,8 @@ use crate::{
 use axum::{
     Json, Router,
     body::Body,
-    extract::{Query, Request, State},
-    routing::{delete, get, post, put},
+    extract::{Request, State},
+    routing::{get, post, put},
 };
 
 pub fn create_cart_router(app: AppState) -> Router {
