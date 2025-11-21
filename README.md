@@ -1,6 +1,6 @@
 # Sales Inv
 
-Inventory & sales API built with Rust and Axum.
+Inventory & point of sales API built with Rust and Axum.
 
 ## Tech Stack
 - Rust (axum, tokio) Programming Language
