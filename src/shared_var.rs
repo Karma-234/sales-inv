@@ -104,6 +104,7 @@ pub struct FilterOptions {
         mcart::handlers::get_open_cart_by_user_handler,
         mcart::handlers::add_item_to_cart_handler,
         mcart::handlers::update_item_in_cart_handler,
+        mcart::handlers::remove_items_from_cart_handler,
 
 
     ),
@@ -136,6 +137,10 @@ pub struct FilterOptions {
             MyBaseResponse::<mcart::models::CartItemModel>,
             MyBaseResponse::<mcart::models::CartWithItemsModel>,
             MyBaseResponse::<Vec<mcart::models::CartItemWithProductModel>>,
+            mcart::models::CartModel,
+            mcart::models::CartItemModel,
+            mcart::models::CartWithItemsModel,
+            mcart::models::CartItemWithProductModel,
             
         )
     ),

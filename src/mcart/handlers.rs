@@ -375,6 +375,17 @@ pub async fn update_item_in_cart_handler(
     MyBaseResponse::ok(Some(updated), Some("Item updated".into()))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/v1/cart/remove-items", 
+    tag = "Carts",
+    request_body = Vec<UpdateCartItemSchema>,
+    responses(
+        (status = 200, description = "Items removed from cart successfully", body = MyBaseResponse<Vec<CartItemModel>>),
+        (status = 409, description = "Database error", body = MyBaseResponse<CartItemModel>),
+    )
+     
+)]
 pub async fn remove_items_from_cart_handler(
      payload: axum::extract::Json<Vec<UpdateCartItemSchema>>,
     state: AppState
@@ -390,7 +401,7 @@ pub async fn remove_items_from_cart_handler(
     }
     let mut sorted_items = items;
     sorted_items.sort_by(|a, b| a.product_id.cmp(&b.product_id));
-    let mut product_ids: Vec<uuid::Uuid> = sorted_items.iter().map(|item| item.product_id).collect();
+    let product_ids: Vec<uuid::Uuid> = sorted_items.iter().map(|item| item.product_id).collect();
     let mut tx = match state.db.begin().await {
         Ok(t) => t,
         Err(e) => return MyBaseResponse::db_err(e),

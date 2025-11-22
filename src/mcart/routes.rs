@@ -10,7 +10,7 @@ use axum::{
     Json, Router,
     body::Body,
     extract::{Request, State},
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
 };
 
 pub fn create_cart_router(app: AppState) -> Router {
@@ -54,7 +54,7 @@ pub fn create_cart_router(app: AppState) -> Router {
         )
         .route(
             "/delete-items",
-            post(
+            delete(
                 |pool: State<AppState>, payload: Json<Vec<UpdateCartItemSchema>>| async move {
                     return mcart::handlers::remove_items_from_cart_handler(
                         payload,
