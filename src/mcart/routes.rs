@@ -3,7 +3,7 @@ use crate::{
     mauth::layers::MyAuthLayer,
     mcart::{
         self,
-        schemas::{AddCartItemSchema, UpdateCartItemSchema},
+        schemas::{AddCartItemSchema, CheckoutCartSchema, UpdateCartItemSchema},
     },
 };
 use axum::{
@@ -61,6 +61,22 @@ pub fn create_cart_router(app: AppState) -> Router {
                         pool.0.clone(),
                     )
                     .await;
+                },
+            ),
+        )
+        .route(
+            "/verify-cart",
+            post(
+                |pool: State<AppState>, payload: Json<Vec<UpdateCartItemSchema>>| async move {
+                    return mcart::handlers::verify_cart_handler(pool.0.clone(), payload).await;
+                },
+            ),
+        )
+        .route(
+            "/checkout-cart",
+            post(
+                |pool: State<AppState>, payload: Json<CheckoutCartSchema>| async move {
+                    return mcart::handlers::checkout_cart_handler(pool.0.clone(), payload).await;
                 },
             ),
         )

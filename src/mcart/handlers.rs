@@ -2,7 +2,7 @@ use crate::AppState;
 use crate::mauth::middlewares::JWTAuthMiddleware;
 use crate::mcart::models::{CartItemModel, CartModel, CartWithItemsModel};
 use crate::mcart::schemas::{
-    AddCartItemSchema, UpdateCartItemSchema,
+    AddCartItemSchema, CheckoutCartSchema, UpdateCartItemSchema
 };
 use crate::mcart::sql_string::CartSQLString;
 use crate::mproduct::models::ProductModel;
@@ -540,4 +540,24 @@ pub async fn verify_cart_handler(state: AppState,payload: Json<Vec<UpdateCartIte
     }
 
     MyBaseResponse::ok(None, Some("Items verified".into()))
+}
+
+pub async fn checkout_cart_handler(state: AppState,payload: Json<CheckoutCartSchema>)-> MyBaseResponse<Vec<CartWithItemsModel>> {
+    let _cart_id = payload.cart_id;
+    
+    let res = sqlx::query_as::<_, CartWithItemsModel>(CartSQLString::PAY_CART_AND_RETURN_WITH_ITEMS)
+        .bind(&_cart_id)
+        .fetch_all(&state.db)
+        .await;
+    match res {
+        Ok(cart) => {
+            
+            MyBaseResponse::ok(Some(cart), Some("Checkout complete!".into()))
+        }
+        Err(e) => {
+            return MyBaseResponse::db_err(e);
+        }
+    }
+    
+    
 }
