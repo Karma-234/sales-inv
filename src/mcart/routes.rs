@@ -56,7 +56,7 @@ pub fn create_cart_router(app: AppState) -> Router {
             "/delete-items",
             delete(
                 |pool: State<AppState>, payload: Json<Vec<UpdateCartItemSchema>>| async move {
-                    return mcart::handlers::remove_items_from_cart_handler(
+                    return mcart::handlers::delete_items_from_cart_handler(
                         payload,
                         pool.0.clone(),
                     )

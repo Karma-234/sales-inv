@@ -104,7 +104,7 @@ pub struct FilterOptions {
         mcart::handlers::get_open_cart_by_user_handler,
         mcart::handlers::add_item_to_cart_handler,
         mcart::handlers::update_item_in_cart_handler,
-        mcart::handlers::remove_items_from_cart_handler,
+        mcart::handlers::delete_items_from_cart_handler,
 
 
     ),

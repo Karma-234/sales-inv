@@ -5,8 +5,10 @@ use crate::mcart::schemas::{
     AddCartItemSchema, UpdateCartItemSchema,
 };
 use crate::mcart::sql_string::CartSQLString;
+use crate::mproduct::models::ProductModel;
 use crate::shared_var::MyBaseResponse;
 
+use axum::Json;
 use axum::body::Body;
 use axum::extract::Request;
 use sqlx::query_as;
@@ -377,7 +379,7 @@ pub async fn update_item_in_cart_handler(
 
 #[utoipa::path(
     delete,
-    path = "/api/v1/cart/remove-items", 
+    path = "/api/v1/cart/delete-items", 
     tag = "Carts",
     request_body = Vec<UpdateCartItemSchema>,
     responses(
@@ -386,11 +388,11 @@ pub async fn update_item_in_cart_handler(
     )
      
 )]
-pub async fn remove_items_from_cart_handler(
+pub async fn delete_items_from_cart_handler(
      payload: axum::extract::Json<Vec<UpdateCartItemSchema>>,
     state: AppState
 ) -> MyBaseResponse<Vec<CartItemModel>> {
-    // Implementation for removing multiple items from cart --- IGNORE ---
+    
     if payload.0.is_empty() {
         return MyBaseResponse::error(400, "No items to remove!");
     }
@@ -479,4 +481,63 @@ pub async fn remove_items_from_cart_handler(
     }
 
     MyBaseResponse::ok(None, Some("Items removed".into()))
+}
+
+pub async fn verify_cart_handler(state: AppState,payload: Json<Vec<UpdateCartItemSchema>>)-> MyBaseResponse<()>
+{
+    if payload.0.is_empty() {
+        return MyBaseResponse::error(400, "No items to verify!");
+    }
+    let items = payload.0;
+    let cart_id = items[0].cart_id;
+    if let Some(false) = items.iter().find(|item| item.cart_id != cart_id).map(|_| false) {
+        return MyBaseResponse::error(400, "All items must belong to the same cart!");
+    }
+    let mut sorted_items = items;
+    sorted_items.sort_by(|a, b| a.product_id.cmp(&b.product_id));
+    let mut product_ids: Vec<uuid::Uuid> = sorted_items.iter().map(|item| item.product_id).collect();
+    product_ids.sort_unstable();
+    product_ids.dedup();
+
+    let mut tx = match state.db.begin().await{
+        Ok(t) => t,
+        Err(e) => return MyBaseResponse::db_err(e),
+    };
+
+    let product_query = r#"SELECT * FROM products WHERE id = ANY($1)"#;
+    let res = query_as::<_, ProductModel>(product_query)
+        .bind(&product_ids)
+        .fetch_all( &mut *tx)
+        .await;
+    let products = match res {
+        Ok(p) => p,
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return MyBaseResponse::db_err(e);
+        }
+    };
+    for item in sorted_items.iter(){
+        let product_opt = products.iter().find(|p| p.id == item.product_id);
+        if product_opt.is_none(){
+            let _ = tx.rollback().await;
+            return MyBaseResponse::error(400, format!("Product with id {} does not exist!", item.product_id));
+        }
+        if product_opt.unwrap().quantity < item.quantity {
+            let _ = tx.rollback().await;
+            return MyBaseResponse::error(400, format!("Insufficient stock for product id {}!", item.product_id));
+        }
+        let ua = item.unit_amount;
+        let pa = product_opt.unwrap().price;
+        let pp = product_opt.unwrap().pack_price;
+        let valid_price = ua == pa || ua == pp.unwrap_or(0.0);
+        if !valid_price {
+            let _ = tx.rollback().await;
+            return MyBaseResponse::error(400, format!("Invalid unit amount for product id {}!", item.product_id));
+        }
+    }
+    if let Err(e) = tx.commit().await {
+        return MyBaseResponse::db_err(e);
+    }
+
+    MyBaseResponse::ok(None, Some("Items verified".into()))
 }
