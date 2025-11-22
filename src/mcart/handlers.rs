@@ -134,7 +134,7 @@ pub async fn add_item_to_cart_handler(
     .await
     {
         Ok(Some(row)) => {
-            // Build new desired quantity (old + added) and call update handler directly.
+            
             let new_qty = row.quantity + payload.quantity;
             let update_payload = UpdateCartItemSchema {
                 cart_id: payload.cart_id,
@@ -373,4 +373,99 @@ pub async fn update_item_in_cart_handler(
     }
 
     MyBaseResponse::ok(Some(updated), Some("Item updated".into()))
+}
+
+pub async fn remove_items_from_cart_handler(
+     payload: axum::extract::Json<Vec<UpdateCartItemSchema>>,
+    state: AppState
+) -> MyBaseResponse<Vec<CartItemModel>> {
+    // Implementation for removing multiple items from cart --- IGNORE ---
+    if payload.0.is_empty() {
+        return MyBaseResponse::error(400, "No items to remove!");
+    }
+    let items = payload.0;
+    let cart_id = items[0].cart_id;
+    if let Some(false) = items.iter().find(|item| item.cart_id != cart_id).map(|_| false) {
+        return MyBaseResponse::error(400, "All items must belong to the same cart!");
+    }
+    let mut sorted_items = items;
+    sorted_items.sort_by(|a, b| a.product_id.cmp(&b.product_id));
+    let mut product_ids: Vec<uuid::Uuid> = sorted_items.iter().map(|item| item.product_id).collect();
+    let mut tx = match state.db.begin().await {
+        Ok(t) => t,
+        Err(e) => return MyBaseResponse::db_err(e),
+    };
+    let check_cart_status = sqlx::query_scalar!(
+        r#"SELECT status::TEXT FROM carts WHERE id = $1 FOR UPDATE"#,
+        cart_id
+    )
+    .fetch_one(&mut *tx)
+    .await;
+    let status = match check_cart_status {
+        Ok(s) => s,
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return MyBaseResponse::db_err(e);  
+        }
+    };
+    if status.unwrap() != "open" {
+        let _ = tx.rollback().await;
+        return MyBaseResponse::error(400, "Cannot modify a closed cart!");
+    }
+    let existin_items = sqlx::query!(
+        r#"SELECT product_id, quantity FROM cart_items
+           WHERE cart_id = $1 AND product_id = ANY($2)
+           FOR UPDATE"#,
+        cart_id,
+        &product_ids
+    )
+    .fetch_all(&mut *tx)
+    .await;
+    let existing_map = match existin_items {
+        Ok(rows) => {
+            let mut map = std::collections::HashMap::new();
+            for row in rows {
+                map.insert(row.product_id, row.quantity);
+            }
+            map
+        },
+        Err(e) => {
+            let _ = tx.rollback().await;
+            return MyBaseResponse::db_err(e);  
+        }
+    };
+   for map in existing_map.iter() {
+        let product_id = map.0;
+        let qty = map.1;
+        let dec = sqlx::query!(
+            r#"UPDATE products
+               SET quantity = quantity + $2, updated_at = now()
+               WHERE id = $1"#,
+            product_id,
+            qty
+        )
+        .execute(&mut *tx)
+        .await;
+        if let Err(e) = dec {
+            let _ = tx.rollback().await;
+            return MyBaseResponse::db_err(e);  
+        }
+    }
+    let del = sqlx::query!(
+        r#"DELETE FROM cart_items
+           WHERE cart_id = $1 AND product_id = ANY($2)"#,
+        cart_id,
+        &product_ids
+    )
+    .execute(&mut *tx)
+    .await;
+    if let Err(e) = del {
+        let _ = tx.rollback().await;
+        return MyBaseResponse::db_err(e);  
+    }
+    if let Err(e) = tx.commit().await {
+        return MyBaseResponse::db_err(e);  
+    }
+
+    MyBaseResponse::ok(None, Some("Items removed".into()))
 }

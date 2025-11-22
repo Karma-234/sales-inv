@@ -3,18 +3,18 @@
 -- WARNING: Floating point is imprecise for money; user requested float.
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE cart_status AS ENUM ('Open','Paid','Refund','FOC');
+CREATE TYPE cart_status AS ENUM ('open','paid','refund','foc');
 
 CREATE TABLE carts (
     id           UUID PRIMARY KEY DEFAULT (uuid_generate_v4()),
     user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    status       cart_status NOT NULL DEFAULT 'Open',
+    status       cart_status NOT NULL DEFAULT 'open',
     total_amount DOUBLE PRECISION NOT NULL DEFAULT 0,  -- recomputed via triggers
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX ux_cart_user_open ON carts(user_id) WHERE status = 'Open';
+CREATE UNIQUE INDEX ux_cart_user_open ON carts(user_id) WHERE status = 'open';
 
 CREATE TABLE cart_items (
     id          BIGSERIAL PRIMARY KEY,
