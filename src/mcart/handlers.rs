@@ -13,6 +13,9 @@ use axum::body::Body;
 use axum::extract::Request;
 use sqlx::query_as;
 
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct Empty;
+
 #[utoipa::path(
     post,
     path = "/api/v1/cart/create", 
@@ -482,8 +485,17 @@ pub async fn delete_items_from_cart_handler(
 
     MyBaseResponse::ok(None, Some("Items removed".into()))
 }
-
-pub async fn verify_cart_handler(state: AppState,payload: Json<Vec<UpdateCartItemSchema>>)-> MyBaseResponse<()>
+#[utoipa::path(
+    post,
+    path = "/api/v1/cart/verify-items", 
+    tag = "Carts",
+    request_body = [UpdateCartItemSchema],
+    responses(
+        (status = 200, description = "Items verified successfully", body = MyBaseResponse<Empty>),
+        (status = 409, description = "Database error", body = MyBaseResponse<Empty>),
+    )
+)]
+pub async fn verify_cart_handler(state: AppState, payload: Json<Vec<UpdateCartItemSchema>>)-> MyBaseResponse<Empty>
 {
     if payload.0.is_empty() {
         return MyBaseResponse::error(400, "No items to verify!");
@@ -499,7 +511,7 @@ pub async fn verify_cart_handler(state: AppState,payload: Json<Vec<UpdateCartIte
     product_ids.sort_unstable();
     product_ids.dedup();
 
-    let mut tx = match state.db.begin().await{
+    let mut tx = match state.db.begin().await {
         Ok(t) => t,
         Err(e) => return MyBaseResponse::db_err(e),
     };
@@ -507,7 +519,7 @@ pub async fn verify_cart_handler(state: AppState,payload: Json<Vec<UpdateCartIte
     let product_query = r#"SELECT * FROM products WHERE id = ANY($1)"#;
     let res = query_as::<_, ProductModel>(product_query)
         .bind(&product_ids)
-        .fetch_all( &mut *tx)
+        .fetch_all(&mut *tx)
         .await;
     let products = match res {
         Ok(p) => p,
@@ -516,20 +528,19 @@ pub async fn verify_cart_handler(state: AppState,payload: Json<Vec<UpdateCartIte
             return MyBaseResponse::db_err(e);
         }
     };
-    for item in sorted_items.iter(){
+    for item in sorted_items.iter() {
         let product_opt = products.iter().find(|p| p.id == item.product_id);
-        if product_opt.is_none(){
+        if product_opt.is_none() {
             let _ = tx.rollback().await;
             return MyBaseResponse::error(400, format!("Product with id {} does not exist!", item.product_id));
         }
-        if product_opt.unwrap().quantity < item.quantity {
+        let product = product_opt.unwrap();
+        if product.quantity < item.quantity {
             let _ = tx.rollback().await;
             return MyBaseResponse::error(400, format!("Insufficient stock for product id {}!", item.product_id));
         }
         let ua = item.unit_amount;
-        let pa = product_opt.unwrap().price;
-        let pp = product_opt.unwrap().pack_price;
-        let valid_price = ua == pa || ua == pp.unwrap_or(0.0);
+        let valid_price = ua == product.price || ua == product.pack_price.unwrap_or(0.0);
         if !valid_price {
             let _ = tx.rollback().await;
             return MyBaseResponse::error(400, format!("Invalid unit amount for product id {}!", item.product_id));
@@ -542,6 +553,19 @@ pub async fn verify_cart_handler(state: AppState,payload: Json<Vec<UpdateCartIte
     MyBaseResponse::ok(None, Some("Items verified".into()))
 }
 
+
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/cart/checkout-cart", 
+    tag = "Carts",
+    request_body = CheckoutCartSchema,
+    responses(
+        (status = 200, description = "Cart checked out successfully", body = MyBaseResponse<Vec<CartWithItemsModel>>),
+        (status = 409, description = "Database error", body = MyBaseResponse<CartWithItemsModel>),
+    )
+     
+)]
 pub async fn checkout_cart_handler(state: AppState,payload: Json<CheckoutCartSchema>)-> MyBaseResponse<Vec<CartWithItemsModel>> {
     let _cart_id = payload.cart_id;
     

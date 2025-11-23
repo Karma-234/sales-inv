@@ -105,6 +105,9 @@ pub struct FilterOptions {
         mcart::handlers::add_item_to_cart_handler,
         mcart::handlers::update_item_in_cart_handler,
         mcart::handlers::delete_items_from_cart_handler,
+        mcart::handlers::verify_cart_handler,
+        mcart::handlers::checkout_cart_handler,
+
 
 
     ),
@@ -141,6 +144,7 @@ pub struct FilterOptions {
             mcart::models::CartItemModel,
             mcart::models::CartWithItemsModel,
             mcart::models::CartItemWithProductModel,
+            
             
         )
     ),
